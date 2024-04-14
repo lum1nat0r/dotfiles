@@ -1,0 +1,128 @@
+@import '../../.cache/wal/colors-waybar.css';
+
+@define-color arch-blue #1793d1;
+@define-color spotify-green #1db954;
+
+* {
+    border: none;
+    border-radius: 0px;
+    font-family: Lekton Nerd Font, Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: transparent;
+    color: white;
+    transition-property: background-color;
+    transition-duration: .5s;
+}
+
+window#waybar.hidden {
+    opacity: 0.2;
+}
+
+#workspaces {
+    background-color: @background;
+    border-radius: 20px;
+}
+
+#workspaces button {
+    color: white;
+}
+
+/* if the button in workspaces is the first element */
+#workspaces button:first-child {
+    border-radius: 20px 0px 0px 20px;
+}
+
+#workspaces button:last-child {
+    border-radius: 0px 20px 20px 0px;
+}
+
+/* https://github.com/Alexays/Waybar/wiki/FAQ#the-workspace-buttons-have-a-strange-hover-effect */
+#workspaces button:hover {
+    background: white;
+    color: @color0;
+}
+
+#workspaces button.active {
+    color: @color1;
+}
+
+#workspaces button.urgent {
+    background-color: @color2;
+}
+
+#mode {
+    background-color: @background;
+    border-bottom: 3px solid black;
+}
+
+#clock {
+    color: @color4;
+    font-weight: bold;
+}
+
+#custom-shutdownmenu {
+    background-color: @background;
+    border-radius: 20px;
+    color: @arch-blue;
+    font-size: 20px;
+    padding: 0 10px 0 13px;
+}
+
+#tray {
+    background-color: @background;
+    border-radius: 20px;
+    padding: 0 20px;
+}
+
+#tray:hover {
+    background-color: @foreground;
+}
+
+#idle_inhibitor {
+    background-color: @background;
+    border-radius: 20px;
+    padding: 0 20px 0 15px;
+}
+
+#idle_inhibitor.activated {
+    /* animate the filling of the background-color */
+    background-color: @color0;
+}
+
+#cpu {
+    /* background-color: @background;
+    border-radius: 20px; */
+    padding: 0 5px;
+}
+
+#memory {
+    /* background-color: @background;
+    border-radius: 20px; */
+    padding: 0 5px;
+}
+
+#temperature {
+    /* background-color: @background;
+    border-radius: 20px; */
+    padding: 0 5px;
+}
+
+#temperature.critical {
+    color: red;
+}
+
+#custom-spotify {
+    border-radius: 20px;
+    padding: 0 20px;
+    color: @spotify-green;
+}
+
+#pulseaudio {
+    background-color: @background;
+    border-radius: 20px;
+    padding: 0 20px;
+} 
