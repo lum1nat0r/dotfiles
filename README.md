@@ -1,25 +1,8 @@
 # dotfiles
 
-This repository contains dotfiles and scripts for arch-linux.
+This repository contains dotfiles and scripts for Arch-linux.
 
-## Prerequisties
+Inside the [default](default) folder you find more general files.
 
-- Installed Arch linux
-- Hyprland
-- hyprpaper
-- Pywal
+The [T480](T480) folder contains a script and configuration for the Lenovo ThinkPad T480.
 
-## Contents
-
-### config-files
-
-Those files are from the directory `~/.config`
-
-- [dunst](.config/dunst)
-- [hyprland](.config/hypr)
-- [neofetch](.config/neofetch)
-- [swayidle](.config/swayidle)
-- [swaylock](.config/swaylock)
-- [waybar](.config/waybar)
-- [wlogout](.config/wlogout)
-- [wofi](.config/wofi)
