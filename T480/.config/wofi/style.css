@@ -1,0 +1,49 @@
+@import "colors-waybar.css";
+
+* {
+    border-radius: 10px;
+    border: none;
+}
+
+window {
+    font-size: 30px;
+    font-family: "Lekton Nerd Font Mono";
+    background-color: @background;
+    opacity: 0.9;
+    color: @color7;
+}
+
+#outer-box {
+    margin: .5em;
+}
+
+#entry {
+    padding: 0.33em;
+}
+
+#entry:nth-child(even){
+    background-color: @background;
+}
+
+#entry:selected {
+    background-color: @foreground;
+    background: linear-gradient(90deg, @foreground 0%, @color4 100%);
+}
+
+#text:selected {
+    color: @color1;
+}
+
+#input {
+    color: @color2;
+    background-color: @background;
+    opacity: 1;
+    padding: 0.3em;
+    margin-bottom: .25em;
+    border: 1px solid @color4;
+}
+
+image {
+    margin-left: .25em;
+    margin-right: .25em;
+}
