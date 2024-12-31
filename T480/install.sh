@@ -13,6 +13,8 @@ pacman_packages=(
     pipewire-pulse
     base-devel
     git
+    brightnessctl
+    hyprlock
 )
 
 # Install packages via pacman
@@ -92,3 +94,5 @@ echo "yay -S libinput-gestures"
 
 # Activate autostart and start libinput-gestures
 echo "libinput-gestures-setup stop desktop autostart start"
+
+# Install Font SF Pro Display Regular & Bold

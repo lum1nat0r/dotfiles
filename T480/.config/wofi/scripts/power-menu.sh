@@ -12,7 +12,7 @@ selected=$(echo -e "$options" | wofi --show dmenu --prompt="Power Menu")
 # Handle the selection
 case "$selected" in
     Lock)
-        hyprctl dispatch lock # Replace with your screen locker command
+        hyprlock # Replace with your screen locker command
         ;;
     Logout)
         hyprctl dispatch exit
