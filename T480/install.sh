@@ -15,6 +15,9 @@ pacman_packages=(
     git
     brightnessctl
     hyprlock
+    hypridle
+    blueman
+    swaync
 )
 
 # Install packages via pacman
@@ -38,6 +41,10 @@ yay --version
 yay_packages=(
     wofi
     getnf
+    playerctl
+    hyprpolkitagent
+    hyprshot
+    swaync-widgets-git
 )
 
 # Install packages via yay
