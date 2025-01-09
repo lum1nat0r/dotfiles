@@ -4,15 +4,15 @@
 cd ~/.config/wofi
 
 # Define menu options
-options="Lock\nLogout\nReboot\nShutdown"
+options="Lock\nLogout\nReboot\nShutdown\nSuspend"
 
 # Use Wofi to display the menu
-selected=$(echo -e "$options" | wofi --show dmenu --prompt="Power Menu")
+selected=$(echo -e "$options" | wofi --show dmenu --prompt="Power Menu" --sort-order=alphabetical -i)
 
 # Handle the selection
 case "$selected" in
     Lock)
-        hyprlock # Replace with your screen locker command
+        hyprlock 
         ;;
     Logout)
         hyprctl dispatch exit
@@ -22,6 +22,9 @@ case "$selected" in
         ;;
     Shutdown)
         systemctl poweroff
+        ;;
+    Suspend)
+        systemctl suspend
         ;;
     *)
         exit 1

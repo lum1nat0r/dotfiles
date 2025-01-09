@@ -1,0 +1,21 @@
+@define-color pink rgb(245, 194, 231); @define-color crust rgb(17, 17, 27); @define-color surface0 #313244; @define-color text rgb(205, 214, 244);
+/* widget audio */
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(1)>button{background: @foreground; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(1)>button:hover{background: @color0; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(1)>button>label{color: @color0;}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(1)>button:hover>label{color: @foreground;}
+/* widget microphone */
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(2)>button{background: @transparent; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(2)>button:hover{background: @color0; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(2)>button>label{color: @foreground;}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(2)>button:hover>label{color: @foreground;}
+/* widget wifi */
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(3)>button{background: @foreground; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(3)>button:hover{background: @color0; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(3)>button>label{color: @color0;}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(3)>button:hover>label{color: @foreground;}
+/* widget bluetooth */
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(4)>button{background: @foreground; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(4)>button:hover{background: @color0; border: 2px solid @foreground}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(4)>button>label{color: @color0;}
+.widget-buttons-grid>flowbox>flowboxchild:nth-child(4)>button:hover>label{color: @foreground;}

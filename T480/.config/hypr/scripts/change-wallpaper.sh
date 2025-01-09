@@ -23,3 +23,5 @@ bash restart-waybar.sh
 # Copy the current wallpaper to $HOME/.cache/current_wallpaper (used by swaylock)
 cp "$wallpaper" "$HOME/.cache/current_wallpaper"
 
+# Run swaync-widgets to update the css file
+swaync-widgets

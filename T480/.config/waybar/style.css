@@ -95,31 +95,43 @@ window#waybar.hidden {
     background-color: @color0;
 }
 
-#cpu {
-    /* background-color: @background;
-    border-radius: 20px; */
+/* Style for the battery and temperature group */
+#battery_temp {
+    padding: 5 5px;
+}
+
+/* Style for the CPU and memory group */
+#cpu_mem {
+    padding: 5 5px;
+}
+
+#net {
+    padding: 5 5px;
+}
+
+/* Optional: Style individual modules within the groups */
+#battery, #temperature, #cpu, #memory {
+    padding: 0px 0px;
+}
+
+/* #cpu {
     padding: 0 5px;
 }
 
 #memory {
-    /* background-color: @background;
-    border-radius: 20px; */
     padding: 0 5px;
 }
 
 #temperature {
-    /* background-color: @background;
-    border-radius: 20px; */
     padding: 0 5px;
-}
+} */
 
 #temperature.critical {
     color: red;
 }
 
 #custom-spotify {
-    border-radius: 20px;
-    padding: 0 20px;
+    /* margin-right: 5px; */
     color: @spotify-green;
 }
 
@@ -129,7 +141,8 @@ window#waybar.hidden {
     padding: 0 20px;
 } 
 
-#battery {
-    background-color: transparent;
-    padding: 0 10px;
+.modules-center {
+    background-color: @background;
+    border-radius: 20px;
+    padding: 0 20px;
 }

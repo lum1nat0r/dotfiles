@@ -15,5 +15,10 @@ elif [[ $class == "stopped" ]]; then
   text=""
 fi
 
+if [[ $text != "" ]]; then
+  # add | space at the beginning of the text and space at the end
+  text="| "$text" "
+fi
+
 echo -e "{\"text\":\""$text"\", \"class\":\""$class"\"}"
 
