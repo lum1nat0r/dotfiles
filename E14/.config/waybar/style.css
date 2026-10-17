@@ -1,0 +1,134 @@
+* {
+  font-family: "JetBrainsMono Nerd Font", "Symbols Nerd Font", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 0;
+  border: none;
+  box-shadow: none;
+}
+window#waybar {
+  background: transparent;
+  color: #eff5ff;
+}
+tooltip {
+  background: rgba(22, 30, 48, 0.95);
+  border: 1px solid rgba(225, 235, 255, 0.28);
+  border-radius: 12px;
+}
+tooltip label {
+  color: #eff5ff;
+  padding: 3px;
+}
+#island,
+#stats,
+#controls {
+  background: rgba(20, 25, 40, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 17px;
+  padding: 0 8px;
+}
+#stats {
+  margin-right: 10px;
+}
+
+/* ─────────────────────────────
+   WORKSPACES · LIQUID GLASS
+   ───────────────────────────── */
+
+#workspaces {
+    background: rgba(20, 25, 40, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 17px;
+    padding: 3px 5px;
+    margin: 0;
+}
+
+#workspaces button {
+    background: transparent;
+    background-image: none;
+    color: #d0daeb;
+
+    border: 1px solid transparent;
+    border-radius: 12px;
+    box-shadow: none;
+    text-shadow: none;
+
+    min-width: 28px;
+    min-height: 30px;
+    padding: 0 9px;
+    margin: 0 2px;
+
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    font-weight: 600;
+
+    transition: background-color 180ms ease,
+                color 180ms ease,
+                border-color 180ms ease;
+}
+
+/* Leere Desktops */
+#workspaces button.empty {
+    color: rgba(190, 205, 225, 0.48);
+}
+
+/* Desktop mit geöffneten Fenstern */
+#workspaces button:not(.empty):not(.active) {
+    color: #e2edff;
+}
+
+/* Aktiver Desktop */
+#workspaces button.active {
+    background: rgba(155, 195, 255, 0.30);
+    color: #ffffff;
+    border: 1px solid rgba(205, 230, 255, 0.42);
+    box-shadow: inset 0 0 8px rgba(170, 205, 255, 0.12);
+}
+
+/* Hover */
+#workspaces button:hover {
+    background: rgba(255, 255, 255, 0.13);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+#workspaces button.active:hover {
+    background: rgba(155, 195, 255, 0.40);
+}
+
+/* Fenster benötigt Aufmerksamkeit */
+#workspaces button.urgent {
+    background: rgba(255, 115, 130, 0.30);
+    color: #ffffff;
+    border-color: rgba(255, 145, 155, 0.50);
+}
+
+#clock,
+#cpu,
+#memory,
+#temperature,
+#battery,
+#network,
+#bluetooth,
+#pulseaudio,
+#pulseaudio.mic,
+#custom-notifications,
+#tray {
+  padding: 0 7px;
+}
+
+#temperature.critical,
+#battery.critical {
+  color: #ff9b9b;
+}
+#battery.warning {
+  color: #ffe3a1;
+}
+#network.disconnected,
+#bluetooth.disabled,
+#pulseaudio.muted {
+  color: #a8afbd;
+}
+#custom-notifications {
+  color: #e4edff;
+}

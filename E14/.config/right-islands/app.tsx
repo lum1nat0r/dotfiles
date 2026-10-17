@@ -1,0 +1,380 @@
+import app from "ags/gtk4/app";
+import { Astal, Gtk, Gdk } from "ags/gtk4";
+import { createPoll } from "ags/time";
+import { execAsync, subprocess } from "ags/process";
+import { createState, createBinding, For, onCleanup } from "ags";
+import GLib from "gi://GLib";
+import css from "./style.css";
+
+const script = `${GLib.get_home_dir()}/.config/right-islands/status.py`;
+const connectionHeight = 18;
+const empty = {
+  cpu: 0,
+  ram: 0,
+  temp: null as number | null,
+  battery: null as number | null,
+  charging: false,
+  wifi: false,
+  ssid: "",
+  bluetooth: false,
+};
+const emptyAudio = {
+  sink: { volume: 0, muted: false },
+  source: { volume: 0, muted: false },
+};
+
+function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
+  const poll = createPoll(JSON.stringify(empty), 2500, `python ${script}`);
+  const info = poll((s: string) => {
+    try {
+      return { ...empty, ...JSON.parse(s) };
+    } catch {
+      return empty;
+    }
+  });
+  // Audio is independent of the 2.5 s system poll: refresh after commands and
+  // on PipeWire/PulseAudio events, including changes made outside this panel.
+  const [audio, setAudio] = createState(emptyAudio);
+  let audioRevision = 0;
+  let disposed = false;
+  const parseAudio = (value: string) => ({
+    volume: Math.round(Number(value.match(/Volume:\s+([\d.]+)/)?.[1] ?? 0) * 100),
+    muted: value.includes("[MUTED]"),
+  });
+  const refreshAudio = async () => {
+    const revision = ++audioRevision;
+    try {
+      const [sink, source] = await Promise.all([
+        execAsync(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]),
+        execAsync(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]),
+      ]);
+      // Discard older reads when another event or click has already requested one.
+      if (!disposed && revision === audioRevision) {
+        setAudio({ sink: parseAudio(sink), source: parseAudio(source) });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const audioEvents = subprocess(["pactl", "subscribe"], (event) => {
+    if (/ on (sink|source|server) /.test(event)) void refreshAudio();
+  });
+  void refreshAudio();
+  onCleanup(() => {
+    disposed = true;
+    audioEvents.kill();
+  });
+  const audioCommand = async (cmd: string) => {
+    try {
+      await execAsync(cmd);
+      await refreshAudio();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const [activePanel, setActivePanel] = createState<
+    "none" | "stats" | "controls"
+  >("none");
+
+  const statsExpanded = activePanel((p) => p === "stats");
+  const controlsExpanded = activePanel((p) => p === "controls");
+  const [shoulderWidth, setShoulderWidth] = createState(0);
+  let closeTimer = 0;
+  const cancelClose = () => {
+    if (closeTimer) GLib.source_remove(closeTimer);
+    closeTimer = 0;
+  };
+  const scheduleClose = (panel: "stats" | "controls") => {
+    cancelClose();
+    // Allow brief pointer excursions without flickering the connected glass shape.
+    closeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
+      closeTimer = 0;
+      if (activePanel.peek() === panel) setActivePanel("none");
+      return GLib.SOURCE_REMOVE;
+    });
+  };
+  onCleanup(cancelClose);
+  const command = (cmd: string) => {
+    try {
+      GLib.spawn_command_line_async(cmd);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const meter = (title: string, value: any) => (
+    <box orientation={Gtk.Orientation.VERTICAL} spacing={4}>
+      <box>
+        <label label={title} xalign={0} hexpand />
+        <label label={value((v: number) => `${v}%`)} />
+      </box>
+      <levelbar
+        value={value((v: number) => Math.max(0, Math.min(1, v / 100)))}
+        class="meter"
+      />
+    </box>
+  );
+  const statsDetails = (
+        <box
+          class="details"
+          orientation={Gtk.Orientation.VERTICAL}
+          spacing={13}
+        >
+          <label label="SYSTEM MONITOR" class="section-title" xalign={0} />
+          {meter(
+            "CPU",
+            info((d) => d.cpu),
+          )}
+          {meter(
+            "RAM",
+            info((d) => d.ram),
+          )}
+          <box>
+            <label label="Temperatur" hexpand xalign={0} />
+            <label
+              label={info((d) =>
+                d.temp === null ? "Nicht erkannt" : `${d.temp} °C`,
+              )}
+            />
+          </box>
+          <box visible={info((d) => d.battery !== null)}>
+            <label label="Akku" hexpand xalign={0} />
+            <label
+              label={info(
+                (d) => `${d.battery ?? 0}%${d.charging ? " · Laden" : ""}`,
+              )}
+            />
+          </box>
+        </box>
+  );
+  const controlsDetails = (
+        <box
+          class="details controls-details"
+          orientation={Gtk.Orientation.VERTICAL}
+          spacing={10}
+        >
+          <label label="CONTROL CENTER" class="section-title" xalign={0} />
+          <box spacing={8} homogeneous>
+            <button
+              class="tile"
+              onClicked={() => command("nm-connection-editor")}
+            >
+              <label
+                label={info((d) =>
+                  d.wifi ? `󰤨  ${d.ssid || "WLAN"}` : "󰤭  WLAN aus",
+                )}
+              />
+            </button>
+            <button class="tile" onClicked={() => command("blueman-manager")}>
+              <label
+                label={info((d) =>
+                  d.bluetooth ? "󰂯  Bluetooth" : "󰂲  Bluetooth aus",
+                )}
+              />
+            </button>
+          </box>
+          <box spacing={8} homogeneous>
+            <button
+              class="tile"
+              onClicked={() =>
+                audioCommand("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
+              }
+            >
+              <label
+                label={audio((d) => (d.sink.muted ? "󰝟  Ton aus" : "󰕾  Ton an"))}
+              />
+            </button>
+            <button
+              class="tile"
+              onClicked={() =>
+                audioCommand("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle")
+              }
+            >
+              <label
+                label={audio((d) =>
+                  d.source.muted ? "󰍭  Mic aus" : "󰍬  Mic an",
+                )}
+              />
+            </button>
+          </box>
+          <box spacing={8}>
+            <label
+              label={audio((d) => `󰕾  ${d.sink.volume}%`)}
+              hexpand
+              xalign={0}
+            />
+            <button
+              class="tile"
+              label="−"
+              onClicked={() =>
+                audioCommand("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
+              }
+            />
+            <button
+              class="tile"
+              label="+"
+              onClicked={() =>
+                audioCommand("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+")
+              }
+            />
+          </box>
+          <box spacing={8}>
+            <label
+              label={audio((d) => `󰍬  ${d.source.volume}%`)}
+              hexpand
+              xalign={0}
+            />
+            <button
+              class="tile"
+              label="−"
+              onClicked={() =>
+                audioCommand("wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-")
+              }
+            />
+            <button
+              class="tile"
+              label="+"
+              onClicked={() =>
+                audioCommand("wpctl set-volume -l 1 @DEFAULT_AUDIO_SOURCE@ 5%+")
+              }
+            />
+          </box>
+          <box spacing={8} homogeneous>
+            <button class="tile" onClicked={() => command("swaync-client -t")}>
+              <label label="󰂚  Mitteilungen" />
+            </button>
+            <button class="tile" onClicked={() => command("pavucontrol")}>
+              <label label="󰒓  Audiogeräte" />
+            </button>
+          </box>
+        </box>
+  );
+  const connectDetails = (details: Gtk.Widget) => {
+    const canvas = new Gtk.DrawingArea();
+    canvas.set_draw_func((_area, cr, width, height) => {
+      const shoulder = shoulderWidth.peek();
+      const radius = connectionHeight;
+      // One continuous, pixel-centred outline: no clipped stroke at the neck/body seam.
+      cr.moveTo(shoulder + 0.5, -1);
+      cr.lineTo(shoulder + 0.5, 0);
+      cr.arc(shoulder - radius, 0, radius + 0.5, 0, Math.PI / 2);
+      cr.lineTo(radius, connectionHeight + 0.5);
+      cr.arcNegative(radius, connectionHeight + radius, radius - 0.5, -Math.PI / 2, -Math.PI);
+      cr.lineTo(0.5, height - radius);
+      cr.arcNegative(radius, height - radius, radius - 0.5, Math.PI, Math.PI / 2);
+      cr.lineTo(width - radius, height - 0.5);
+      cr.arcNegative(width - radius, height - radius, radius - 0.5, Math.PI / 2, 0);
+      cr.lineTo(width - 0.5, -1);
+      cr.setSourceRGBA(20 / 255, 25 / 255, 40 / 255, 0.45);
+      cr.fillPreserve();
+      cr.setSourceRGBA(1, 1, 1, 0.25);
+      cr.setLineWidth(1);
+      cr.stroke();
+    });
+    const content = (
+      <box orientation={Gtk.Orientation.VERTICAL} marginTop={connectionHeight}>
+        {details}
+      </box>
+    );
+    const overlay = new Gtk.Overlay({ child: canvas });
+    overlay.add_overlay(content);
+    overlay.set_measure_overlay(content, true);
+    return overlay;
+  };
+  const common = {
+    gdkmonitor: monitor,
+    anchor: Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT,
+    exclusivity: Astal.Exclusivity.IGNORE,
+    marginTop: 9,
+    marginRight: 12,
+    application: app,
+    namespace: "right-islands",
+    class: "right-window",
+  };
+  let statsWindow: Astal.Window;
+  let controlsWindow: Astal.Window;
+  let summary: Gtk.Box;
+  let controlsSummary: Gtk.Box;
+  const openPanel = (panel: "stats" | "controls") => {
+    cancelClose();
+    const window = panel === "stats" ? statsWindow : controlsWindow;
+    // Measure only the permanent row: expanded content never participates in its layout.
+    window.margin_top = common.marginTop + summary.get_height();
+    window.margin_right = common.marginRight +
+      (panel === "stats" ? controlsSummary.get_width() + 12 : 0);
+    const details = panel === "stats" ? statsDetails : controlsDetails;
+    const islandWidth = panel === "stats"
+      ? summary.get_width() - controlsSummary.get_width() - 12
+      : controlsSummary.get_width();
+    // Leave room for both the outer corner and the concave neck on the left shoulder.
+    const [, detailWidth] = details.measure(Gtk.Orientation.HORIZONTAL, -1);
+    setShoulderWidth(Math.max(0, detailWidth - islandWidth));
+    setActivePanel(panel);
+  };
+  return (
+    <>
+      <window {...common} name="right-summary" visible>
+        <box class="panel-row" spacing={12} $={(self) => { summary = self; }}>
+          <box class={statsExpanded((expanded) => `glass compact${expanded ? " joined" : ""}`)} spacing={13}>
+            <Gtk.EventControllerMotion
+              onEnter={() => openPanel("stats")}
+              onLeave={() => scheduleClose("stats")}
+            />
+            <label widthChars={6} label={info((d) => ` ${d.cpu}%`)} />
+            <label widthChars={6} label={info((d) => ` ${d.ram}%`)} />
+            <label widthChars={6} label={info((d) => d.temp === null ? " --" : ` ${d.temp}°`)} />
+            <label widthChars={6} visible={info((d) => d.battery !== null)} label={info((d) => `󰁹 ${d.battery ?? 0}%`)} />
+          </box>
+          {/* Measure the unstyled wrapper, including the island's CSS padding and border. */}
+          <box $={(self) => { controlsSummary = self; }}>
+          <box class={controlsExpanded((expanded) => `glass compact${expanded ? " joined" : ""}`)} spacing={15}>
+            <Gtk.EventControllerMotion
+              onEnter={() => openPanel("controls")}
+              onLeave={() => scheduleClose("controls")}
+            />
+            <label label={info((d) => d.wifi ? "󰤨" : "󰤭")} />
+            <label label={info((d) => d.bluetooth ? "󰂯" : "󰂲")} />
+            <label label={audio((d) => d.sink.muted ? "󰝟" : "󰕾")} />
+            <label label={audio((d) => d.source.muted ? "󰍭" : "󰍬")} />
+            <label label="󰂚" />
+          </box>
+          </box>
+        </box>
+      </window>
+      <window {...common} name="right-stats" visible={statsExpanded}
+        $={(self) => { statsWindow = self; }}>
+        <box>
+          <Gtk.EventControllerMotion
+            onEnter={cancelClose}
+            onLeave={() => scheduleClose("stats")}
+          />
+          {connectDetails(statsDetails)}
+        </box>
+      </window>
+      <window {...common} name="right-controls" visible={controlsExpanded}
+        $={(self) => { controlsWindow = self; }}>
+        <box>
+          <Gtk.EventControllerMotion
+            onEnter={cancelClose}
+            onLeave={() => scheduleClose("controls")}
+          />
+          {connectDetails(controlsDetails)}
+        </box>
+      </window>
+    </>
+  );
+}
+app.start({
+  instanceName: "right-islands",
+  css,
+  main() {
+    return <For each={createBinding(app, "monitors")}>
+      {/* One window set per monitor; For handles monitor additions/removals. */}
+      {(monitor) => {
+        const windows = [...RightIslands({ monitor })] as Gtk.Window[];
+        // For owns the first window; dispose the remaining fragment windows here.
+        onCleanup(() => windows.slice(1).forEach(window => window.destroy()));
+        return windows[0];
+      }}
+    </For>;
+  },
+});

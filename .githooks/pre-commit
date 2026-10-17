@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+PATH="$HOME/.local/bin:$PATH"
+export PATH
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    printf '%s\n' 'Commit blocked: install gitleaks to scan staged changes for secrets.' >&2
+    exit 1
+fi
+
+exec gitleaks git --pre-commit --staged --redact --no-banner

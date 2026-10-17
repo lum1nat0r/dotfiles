@@ -1,0 +1,52 @@
+* { font-family: "JetBrainsMono Nerd Font", sans-serif; color: #eff5ff; }
+window.music-window, .center-row { background: transparent; }
+.music-shell, .clock-shell {
+    background: rgba(20,25,40,0.45);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 18px;
+}
+/* Match the clock's 52px outer height, both with and without the hover player. */
+.music-compact { min-height: 50px; padding: 0 17px; }
+/* The fixed-width header stays in the permanent row; only the lower player is mapped. */
+.music-shell.joined {
+    border-bottom-width: 0;
+    padding-bottom: 1px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.player-shell {
+    border-top-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+.clock-shell {
+    min-height: 42px;
+    padding: 4px 16px;
+}
+.clock-time {
+    font-size: 21px;
+    font-weight: 700;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.7px;
+}
+.clock-divider {
+    background: rgba(210, 230, 255, 0.28);
+    min-width: 1px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.clock-details { spacing: 1px; }
+.clock-weekday { font-size: 11px; font-weight: 600; color: #f0f5ff; }
+.clock-date { font-size: 10px; color: #b7c8de; }
+
+.spotify-icon { color: #a9f2c4; font-size: 20px; }
+.compact-title { font-weight: bold; font-size: 12px; }
+.compact-control { font-size: 17px; color: #c6e5ff; }
+.player { padding: 12px 18px 18px; min-width: 240px; }
+.album-art { border-radius: 12px; }
+.track-title { font-size: 15px; font-weight: bold; }
+.track-artist, .times { font-size: 11px; color: #c3cfe1; }
+.progress trough { min-height: 5px; background: rgba(255,255,255,0.15); border-radius: 5px; }
+.progress block.filled { background: #b5d7ff; border-radius: 5px; }
+.player-controls button { background: rgba(255,255,255,0.08); border: none; border-radius: 18px; padding: 8px 12px; font-size: 20px; }
+.player-controls button.primary { background: rgba(175,205,255,0.26); }

@@ -1,0 +1,68 @@
+* {
+  font-family: "JetBrainsMono Nerd Font", sans-serif;
+  color: #eff5ff;
+  font-size: 12px;
+}
+window.right-window,
+.panel-row {
+  background: transparent;
+}
+.glass {
+  background: rgba(20, 25, 40, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 18px;
+}
+.compact {
+  min-height: 42px;
+  padding: 0 14px;
+}
+/* Preserve the summary's allocation while joining its outline to the detail surface. */
+.compact.joined {
+  border-bottom-width: 0;
+  padding-bottom: 1px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.details {
+  padding: 16px;
+  /* Keep enough left shoulder for the outer corner and the rounded neck. */
+  min-width: 255px;
+  border: 1px solid transparent;
+  border-top-width: 0;
+}
+.controls-details {
+  min-width: 300px;
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #b7c8de;
+}
+.meter trough {
+  min-height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+}
+.meter block.filled {
+  background: #b5d7ff;
+  border-radius: 5px;
+}
+.tile {
+  background: rgba(165, 200, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 10px 8px;
+}
+.tile:hover {
+  background: rgba(165, 200, 255, 0.25);
+}
+scale trough {
+  min-height: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+}
+scale highlight {
+  background: #b5d7ff;
+  border-radius: 6px;
+}

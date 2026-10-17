@@ -1,0 +1,57 @@
+* {
+    font-family: "Lekton Nerd Font Mono";
+    font-size: 18px;
+    border: none;
+    box-shadow: none;
+    background-image: none;
+}
+
+window {
+    background-color: rgba(20, 25, 40, 0.20);
+    color: #f0f5ff;
+    border-radius: 22px;
+}
+
+#outer-box {
+    background-color: transparent;
+    padding: 16px;
+}
+
+#inner-box,
+#scroll {
+    background-color: transparent;
+}
+
+#input {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+#entry {
+    background-color: transparent;
+    padding: 10px;
+    margin: 3px 0;
+    border-radius: 12px;
+}
+
+#entry:selected {
+    background-color: rgba(170, 203, 255, 0.30);
+}
+
+#text {
+    background-color: transparent;
+    color: #e8f0ff;
+}
+
+#text:selected {
+    color: #ffffff;
+}
+
+image {
+    margin-left: 6px;
+    margin-right: 12px;
+}

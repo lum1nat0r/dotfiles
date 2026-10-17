@@ -1,0 +1,64 @@
+/* Island palette with 94% coverage: readability over text-heavy windows takes
+ * priority over transparency. Hyprland supplies blur; transparent margins stay clear. */
+:root {
+  --cc-bg: rgba(20, 25, 40, 0.94);
+  --noti-border-color: rgba(255, 255, 255, 0.18);
+  --noti-bg: 20, 25, 40;
+  --noti-bg-alpha: 0.94;
+  --noti-bg-hover: rgba(65, 80, 108, 0.96);
+  --noti-bg-focus: rgba(165, 200, 255, 0.16);
+  --noti-close-bg: rgba(165, 200, 255, 0.12);
+  --noti-close-bg-hover: rgba(165, 200, 255, 0.25);
+  --text-color: #eff5ff;
+  --text-color-disabled: #b7c8de;
+  --bg-selected: #b5d7ff;
+  --notification-icon-size: 32px;
+  --notification-group-icon-size: 24px;
+  --border-radius: 12px;
+  --notification-shadow: none;
+  --font-size-body: 13px;
+  --font-size-summary: 14px;
+}
+* { font-family: "JetBrainsMono Nerd Font", sans-serif; }
+.control-center {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 18px;
+  padding: 6px;
+}
+.notification-row .notification-background { padding: 5px 6px; }
+.floating-notifications .notification-background { padding: 12px; }
+.floating-notifications .notification {
+  border-radius: 18px;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.control-center .notification { background: rgba(165, 200, 255, 0.07); }
+.control-center .notification-group.collapsed .notification-row .notification {
+  background: rgb(34, 41, 59);
+}
+.notification-row .notification-background .notification .notification-default-action { padding: 14px; }
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .summary { font-weight: 600; }
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .time {
+  font-size: 11px;
+  font-weight: normal;
+  color: #b7c8de;
+}
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .body { color: #eff5ff; }
+.notification-row .notification-background .notification.critical { border-color: #ff9b9b; }
+.notification-group .notification-group-headers { color: #b7c8de; margin: 8px 12px; }
+.close-button { min-width: 26px; min-height: 26px; }
+.widget { margin: 6px; padding: 8px; }
+.widget-title > label { font-size: 17px; font-weight: 700; color: #eff5ff; }
+.widget-dnd label { font-size: 12px; color: #b7c8de; }
+.widget-title > button, .widget-inhibitors > button, .notification-action > button {
+  background: rgba(165, 200, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #eff5ff;
+  padding: 7px 10px;
+  box-shadow: none;
+}
+.widget-title > button:hover, .notification-action > button:hover { background: rgba(165, 200, 255, 0.25); }
+button:focus-visible { outline: 2px solid #b5d7ff; outline-offset: -2px; }
+switch { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.15); }
+switch:checked { background: rgba(165, 200, 255, 0.45); }
+switch slider { background: #eff5ff; }

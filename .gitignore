@@ -1,0 +1,37 @@
+# E14 is an allowlist, not a mirror of HOME or .config.
+# Review each new file, then add its exact path below. Never use git add -f.
+/E14/**
+!/E14/**/
+!/E14/.bashrc
+!/E14/.bash_profile
+!/E14/.config/Code/User/settings.json
+!/E14/.config/hypr/hyprland.lua
+!/E14/.config/hypr/hyprlock.conf
+!/E14/.config/hypr/scripts/launch-wofi.sh
+!/E14/.config/kiorc
+!/E14/.config/music-island/app.tsx
+!/E14/.config/music-island/metadata.py
+!/E14/.config/music-island/style.css
+!/E14/.config/pavucontrol.ini
+!/E14/.config/right-islands/app.tsx
+!/E14/.config/right-islands/status.py
+!/E14/.config/right-islands/style.css
+!/E14/.config/swaync/config.json
+!/E14/.config/swaync/style.css
+!/E14/.config/waybar/config.jsonc
+!/E14/.config/waybar/scripts/notifications.sh
+!/E14/.config/waybar/style.css
+!/E14/.config/wofi/powermenu.css
+!/E14/.config/wofi/style.css
+
+# Local overrides, credentials and generated files are never intentional inputs.
+.env
+.env.*
+*.local
+*.local.*
+*.log
+*.bak
+*.swp
+*~
+__pycache__/
+*.py[cod]
