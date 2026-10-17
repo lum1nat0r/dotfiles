@@ -195,11 +195,39 @@ repository files.
 | Spotify | `Spotify` | 5 |
 
 Opening a matching window switches to its destination workspace (no `silent`).
-Existing windows are not moved by a reload, and autostart is unchanged.
+Application rules do not reassign existing windows to other workspaces on reload;
+the monitor rules below can move whole workspaces. Autostart is unchanged.
 Reload with `hyprctl reload`; no restow is needed for this existing file link.
 Verified on the running compositor with temporary Kitty windows advertising each
 class: all four landed on their assigned workspace and switched focus there.
 The actual Firefox, VS Code and Spotify processes were not restarted.
+
+### Monitor assignment and docking
+
+The existing 1–10 keybinding loop also assigns those workspaces to monitors:
+
+| Workspaces | Preferred output | Default workspace |
+| --- | --- | --- |
+| 1 | Internal `eDP-1` | 1 |
+| 2–10 | External `DP-1` | 2 |
+
+Selecting a workspace focuses its assigned output instead of bringing that
+workspace onto the currently focused monitor. Without `DP-1`, all ten workspaces
+remain usable on the internal screen. When the external output returns,
+Hyprland moves the assigned workspaces back, including ones opened while undocked.
+No persistent empty workspaces or additional docking daemon are introduced.
+Application assignments, monitor modes/positions and the special scratchpad are
+unchanged. Workspaces outside the configured 1–10 range have no monitor rule.
+See [Hyprland workspace rules](https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/).
+
+Verification on the running compositor created workspaces 6–10 from the internal
+screen and confirmed placement on `DP-1`. Temporarily disabling that output through
+Hyprland moved existing workspaces to `eDP-1`; opening workspace 6 there also worked.
+Restoring the configured outputs returned workspaces to their assigned monitors.
+Original windows retained their workspace membership, previous active workspaces
+were restored, configuration errors were empty and both outputs were checked
+visually. Gitleaks found no secrets in the Hypr configuration directory.
+Physical cable removal/reconnection was not tested.
 
 ## MX Master 3S workspace gestures
 
@@ -270,6 +298,15 @@ cancels pending retries. Power-query failures use the shorter timeout.
 Standard Wayland, D-Bus and systemd idle inhibitors remain respected, including
 OMP's active-session inhibitor.
 
+Suspend requests are handled centrally by Hypridle:
+`before_sleep_cmd = loginctl lock-session` uses the same grace-free lock command,
+and `inhibit_sleep = 3` delays sleep until the Wayland session-lock notification.
+This covers logind-mediated suspend from the power menu, `systemctl suspend`
+and lid handling, provided Hypridle is running. It does not add automatic suspend.
+The logind delay inhibitor is bounded by `InhibitDelayMaxSec` (currently 5 seconds);
+it is not an indefinite fail-closed block if the locker fails.
+See the [Hypridle sleep-inhibition documentation](https://wiki.hypr.land/Hypr-Ecosystem/hypridle/).
+
 The existing `hyprland.start` Lua callback starts Hypridle once per session;
 reloading the configuration does not rerun that callback. Do not also enable
 `hypridle.service`. To activate in an existing session, only when
@@ -279,6 +316,11 @@ reloading the configuration does not rerun that callback. Do not also enable
 hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'
 ```
 
+After editing an already running Hypridle's configuration, terminate only that
+Hypridle process and launch it again using the command above. No restow or
+Hyprland restart is needed. Check that exactly one Hypridle instance is running
+and that `systemd-inhibit --list` lists its `sleep` / `delay` inhibitor.
+
 Short-timeout verification used real Hypridle/Hyprlock and real AC detection.
 Battery, unplug and retry-cancellation scenarios used only a temporary
 power-source simulator, not a physical unplug. Repeated lock requests kept one
@@ -286,6 +328,12 @@ Hyprlock process; the user confirmed the existing Power-menu Lock action and
 manual unlocking. Test scripts, screenshots and logs stay outside the repository.
 Production-duration timing and automatic startup on the next login are separate
 checks; do not log out with unsaved work just to test them.
+
+The suspend-lock configuration was activated in the existing session: one
+Hypridle instance was running and logind reported its sleep-delay inhibitor,
+which was absent with the previous `inhibit_sleep = 0` configuration. Gitleaks
+found no secrets in the Hypr configuration directory. No actual lock, suspend,
+lid-close or resume was triggered; the hardware round trip remains unverified.
 
 ## SDDM: E14 Glass
 
@@ -598,8 +646,9 @@ the focused output, including Waybar, without changing panel reservations.
 `hyprctl monitors -j` selects the focused output; no offset compensation is needed.
 Confirmations use a compact centered button group over the same full-screen glass.
 
-Lock runs `hyprlock --grace 0`. Sleep runs `systemctl suspend` and **does not
-automatically lock the session**. Hibernate is not offered or dispatched.
+Lock runs `hyprlock --grace 0`. Sleep runs `systemctl suspend`; the running
+Hypridle instance requests locking and delays suspend as described under
+Power-aware idle lock. Hibernate is not offered or dispatched.
 Swap and system power settings are unchanged.
 
 Logout, Shutdown and Reboot require a second dialog. `Abbrechen` is first;

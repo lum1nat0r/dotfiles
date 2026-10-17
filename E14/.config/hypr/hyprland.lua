@@ -394,6 +394,13 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
 for i = 1, 10 do
+    -- Bind all ten configured workspaces; missing outputs fall back to the laptop.
+    hl.workspace_rule({
+        workspace = tostring(i),
+        monitor = i == 1 and "eDP-1" or "DP-1",
+        default = i <= 2,
+    })
+
     local key = i % 10 -- 10 maps to key 0
     hl.bind(mainMod .. " + " .. key,             hl.dsp.focus({ workspace = i}))
     hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }))
