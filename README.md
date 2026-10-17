@@ -157,6 +157,7 @@ The package contains explicitly reviewed configuration files:
 
 - Bash interactive settings/login sourcing and Zsh/Oh My Zsh preferences.
 - Hyprland Lua configuration, Hyprlock/Hypridle configuration and the Wofi launcher.
+- The E14 systemd user-session target, compositor lifetime watcher and desktop-service units.
 - Waybar, SwayNC and Wofi configuration/styles and the notification helper.
 - The music-island and right-islands widget sources/styles/helpers and shared island palette.
 - VS Code's CSS/JSONC formatter selections, KIO delete confirmation and
@@ -181,6 +182,66 @@ The following remain local and are not deployed or changed by Stow:
 Widget artwork/telemetry caches remain outside the package. Runtime SSIDs,
 media metadata, clipboard contents and notifications must not be saved into
 repository files.
+
+## Desktop autostart
+
+`hyprland.start` calls `~/.config/hypr/scripts/start-session.sh` once, then opens
+the initial Kitty terminal as a normal application window. A configuration reload
+does not rerun autostart. The background desktop has one owner: the systemd user
+manager, grouped under `e14-session.target`.
+
+The bootstrap resolves the PID for the current `HYPRLAND_INSTANCE_SIGNATURE`,
+stops the old target, graphical session and lifetime watcher completely, and only
+then imports the current display environment into D-Bus/systemd. Waiting for all
+three stop jobs prevents old-session cleanup from erasing the new environment.
+It sets the compositor PID and starts the target. `e14-session-watch.service`
+uses util-linux `waitpid` to follow that process; when it exits, `BindsTo` stops
+the target and propagates the stop to `graphical-session.target`. This also works
+when the compositor exits without a Lua shutdown callback. The watcher cancels
+pending lock-DPMS jobs and clears the session variables from the user manager.
+This profile assumes one graphical session for this user.
+
+| Component | systemd user unit |
+| --- | --- |
+| Notifications, idle lock, bar, polkit | Existing `swaync`, `hypridle`, `waybar`, `hyprpolkitagent` services |
+| Desktop portals | Existing `xdg-desktop-portal` and `xdg-desktop-portal-hyprland` services |
+| Clipboard history | `e14-clipboard@text.service`, `e14-clipboard@image.service` |
+| Dictation and network tray | `e14-handy.service`, `e14-nm-applet.service` |
+| Islands | `e14-music-island.service`, `e14-right-islands.service` |
+
+The target pulls in these services; do not additionally enable them for boot or
+launch them directly from Hyprland/XDG autostart. In particular, D-Bus notification
+activation now reaches the same SwayNC unit instead of racing a directly started
+daemon. Existing keyring and audio services keep their package-provided lifecycle.
+Private application autostart/account configuration remains local and unchanged.
+The installed SDDM session entry and UWSM selection are unchanged.
+
+Deploy added files using the Stow procedure above, then load the new unit files:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user status e14-session.target
+```
+
+To start or rebuild the desktop stack in an existing unlocked session:
+
+```sh
+sh "$HOME/.config/hypr/scripts/start-session.sh"
+```
+
+This intentionally restarts the desktop services, not application windows; do not
+run it during dictation or a portal screen-sharing session. For individual changes,
+use `systemctl --user restart UNIT` and inspect `journalctl --user -u UNIT`.
+`systemctl --user start e14-session.target` is a no-op while already active.
+
+Verification exercised the actual bootstrap and services, repeated target starts
+and Hyprland reloads without extra processes, and checked notification/portal/island
+D-Bus ownership. A controlled watched-process exit stopped all 13 managed services,
+the graphical target and stale manager environment; the real desktop was restored
+without losing original application windows. Both monitors' bars/islands were
+checked visually, and Hypridle retained its sleep-delay inhibitor. Unit validation
+and Gitleaks passed. A real logout/login and compositor crash were not triggered.
+The existing failed Dolphin unit from the earlier session disconnect was not reset.
 
 ## Application workspaces
 
@@ -289,7 +350,7 @@ Device identities and diagnostic logs remain outside the repository.
 Install `hypridle` (v0.1.8 or newer), `hyprlock` and systemd's `systemd-ac-power`.
 `E14/.config/hypr/hypridle.conf` locks after 5 minutes on battery or 15 minutes
 on AC, using the existing Hyprlock PAM/fingerprint configuration without a grace
-period. It adds no suspend, dimming or display-power actions.
+period. It adds no automatic suspend or dimming.
 
 Both listeners share the same inactivity cycle. After 5 idle minutes on AC,
 Hypridle retries `! systemd-ac-power` every 5 seconds; unplugging can therefore
@@ -307,19 +368,45 @@ The logind delay inhibitor is bounded by `InhibitDelayMaxSec` (currently 5 secon
 it is not an indefinite fail-closed block if the locker fails.
 See the [Hypridle sleep-inhibition documentation](https://wiki.hypr.land/Hypr-Ecosystem/hypridle/).
 
-The existing `hyprland.start` Lua callback starts Hypridle once per session;
-reloading the configuration does not rerun that callback. Do not also enable
-`hypridle.service`. To activate in an existing session, only when
-`pgrep -x hypridle` finds no process:
+### Display power after locking
+
+Hypridle's `on_lock_cmd` starts a transient user timer only after the compositor
+confirms the session lock. After 10 seconds, `hyprlock-dpms.timer` runs
+`hl.dsp.dpms({action = "off"})` for all outputs. Timer accuracy is 100 ms; normal
+scheduler/IPC latency can add a little delay. This is a one-shot per lock event,
+not another inactivity timeout, so idle inhibitors do not postpone it.
+
+`on_unlock_cmd` stops any loaded `hyprlock-dpms.*` timer/service before turning
+the displays on. Unlocking early therefore cancels the pending shutdown; locking
+again starts a fresh delay. The timer/service are collected automatically and
+remain runtime state outside Stow. The compositor signature is passed explicitly
+to the transient service rather than relying on a stale user-manager environment.
+
+`misc.key_press_enables_dpms` and `misc.mouse_move_enables_dpms` wake the displays
+on keyboard or mouse input; waking does not itself unlock the session.
+Authentication and the existing idle/suspend locking rules are unchanged.
+
+Verification invoked the configured hooks without a real lock, as requested.
+Canceling after 3 seconds and starting again kept both displays on past the old
+deadline; both went DPMS-off about 10.23 seconds after the fresh start. Unlock
+cleanup restored both outputs, worked after timer collection and left no transient
+units. A Shift key woke both outputs through the native keyboard-wake option.
+Automatic input wake was temporarily disabled only to observe the timed DPMS-off,
+then restored. The latest hooks were activated by restarting the single Hypridle
+instance; compositor config errors were empty and Gitleaks found no secrets.
+Actual lock/unlock notifications, physical mouse wake and suspend/resume were not
+exercised in this check.
+
+`hypridle.service` is pulled in by `e14-session.target`; do not start a second
+Hypridle process directly. After editing its linked configuration, activate it with:
 
 ```sh
-hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'
+systemctl --user restart hypridle.service
 ```
 
-After editing an already running Hypridle's configuration, terminate only that
-Hypridle process and launch it again using the command above. No restow or
-Hyprland restart is needed. Check that exactly one Hypridle instance is running
-and that `systemd-inhibit --list` lists its `sleep` / `delay` inhibitor.
+No restow or Hyprland restart is needed for existing linked files. Check that
+exactly one Hypridle instance is running and that `systemd-inhibit --list` lists
+its `sleep` / `delay` inhibitor.
 
 Short-timeout verification used real Hypridle/Hyprlock and real AC detection.
 Battery, unplug and retry-cancellation scenarios used only a temporary
@@ -441,11 +528,11 @@ VS Code formatter settings require `esbenp.prettier-vscode`.
 The styles reference JetBrainsMono Nerd Font, Symbols Nerd Font and
 Lekton Nerd Font Mono.
 
-The island autostart uses GLib's `gdbus wait` to start right-islands only after
-music-island owns `io.Astal.music-island` on the session bus. AGS 3.1 writes every
-`ags run` bundle to the same `$XDG_RUNTIME_DIR/ags.js`; concurrent starts can
-therefore load the wrong widget. Keep this ordering when changing autostart.
-If music-island fails before registering on D-Bus, right-islands waits for it.
+The island units use `Type=dbus`: music-island is ready only after it owns
+`io.Astal.music-island`, and right-islands has `Requires`/`After` dependencies on it.
+Both start after Waybar. AGS 3.1 writes every `ags run` bundle to the same
+`$XDG_RUNTIME_DIR/ags.js`; concurrent starts can therefore load the wrong widget.
+Keep this ordering and use the units rather than launching additional AGS copies.
 GTK box spacing belongs in the TSX `spacing` property, not in GTK CSS.
 
 The center music and clock compact surfaces have a 44px outer height, matching
@@ -461,8 +548,8 @@ Hyprland 0.56.2 gives this empty client region precedence over its layer blur ru
 Disabling that protocol lets the existing `music-island` and `right-islands`
 layer rules blur the translucent pixels, including the Cairo-drawn stats/control
 cards and their animated contours. CSS opacity and the GTK renderer stay unchanged;
-other GTK applications are unaffected. Use the same environment prefix for manual
-`ags run` launches; a Hyprland reload alone does not restart existing islands.
+other GTK applications are unaffected. The override is set in both island units;
+restart those units to apply widget changes. A Hyprland reload does not restart them.
 See [GTK's surface setup](https://github.com/GNOME/gtk/blob/4.24.1/gdk/wayland/gdksurface-wayland.c)
 and [Hyprland's `shouldBlur` precedence](https://github.com/hyprwm/Hyprland/blob/v0.56.2/src/render/Renderer.cpp).
 Verification: both real island processes ran with the scoped override, neither
@@ -506,24 +593,18 @@ toolbar/content no longer tinted the panels. Config verification and Gitleaks pa
 After editing the palette, reload Waybar first:
 
 ```sh
-pkill -USR2 -x waybar
+systemctl --user reload waybar.service
 ```
 
-Wait for Waybar to reappear, then restart the islands in order:
+Wait for Waybar to reappear, then restart both islands in one ordered transaction:
 
 ```sh
-ags quit -i right-islands
-ags quit -i music-island
-env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 \
-    ags run "$HOME/.config/music-island/app.tsx" &
-gdbus wait --session io.Astal.music-island
-env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 \
-    ags run "$HOME/.config/right-islands/app.tsx" &
+systemctl --user restart e14-music-island.service e14-right-islands.service
 ```
 
 Restarting the islands after Waybar also puts their hover targets above Waybar's
-full-width layer. Keep the scoped protocol override for the blur behavior described
-above. No restow is needed for subsequent palette edits.
+full-width layer. Their units preserve the scoped protocol override and D-Bus
+startup ordering. No restow is needed for subsequent palette edits.
 
 Verification loaded all three deployed stylesheets with their actual GTK3/GTK4
 parsers and checked the resolved RGBA values, then reloaded Waybar and sequentially
@@ -715,7 +796,7 @@ installation uses Handy 0.9.8; its reviewed AUR recipe repackages the upstream
 release and verifies the downloaded sources with BLAKE2 checksums.
 Updates belong to the package manager, not Handy's built-in updater.
 
-`hyprland.lua` starts `handy --start-hidden` once per compositor session:
+`e14-handy.service` starts `handy --start-hidden` once per compositor session:
 
 | Shortcut | Action |
 | --- | --- |
@@ -736,7 +817,7 @@ Use these Handy preferences:
 | Auto-submit / post-processing | Both off |
 | History / recording retention | Limit 0; preserve only entries within that limit |
 | Model unload | After 5 minutes |
-| Startup | Start hidden; Handy's own login autostart off (Hyprland owns it) |
+| Startup | Start hidden; Handy's own login autostart off (`e14-handy.service` owns it) |
 | Update checks / logging | Built-in update checks off; log level Warn |
 
 The paste helper uses `Ctrl+Shift+V` in Kitty and `Ctrl+V` elsewhere, then

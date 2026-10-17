@@ -1,0 +1,15 @@
+[Unit]
+Description=E14 status and controls islands
+PartOf=graphical-session.target
+Requires=e14-music-island.service
+After=graphical-session.target waybar.service e14-music-island.service
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=dbus
+BusName=io.Astal.right-islands
+Environment=GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1
+ExecStart=/usr/bin/ags run %h/.config/right-islands/app.tsx
+Restart=on-failure
+TimeoutStopSec=5
+Slice=session.slice

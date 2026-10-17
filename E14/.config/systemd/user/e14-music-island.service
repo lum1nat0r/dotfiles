@@ -1,0 +1,14 @@
+[Unit]
+Description=E14 music and clock island
+PartOf=graphical-session.target
+After=graphical-session.target waybar.service
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=dbus
+BusName=io.Astal.music-island
+Environment=GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1
+ExecStart=/usr/bin/ags run %h/.config/music-island/app.tsx
+Restart=on-failure
+TimeoutStopSec=5
+Slice=session.slice

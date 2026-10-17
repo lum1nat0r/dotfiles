@@ -15,6 +15,14 @@
 !/E14/.config/hypr/scripts/power-menu.sh
 !/E14/.config/hypr/scripts/power-menu.py
 !/E14/.config/kiorc
+!/E14/.config/hypr/scripts/start-session.sh
+!/E14/.config/systemd/user/e14-session.target
+!/E14/.config/systemd/user/e14-session-watch.service
+!/E14/.config/systemd/user/e14-clipboard@.service
+!/E14/.config/systemd/user/e14-handy.service
+!/E14/.config/systemd/user/e14-nm-applet.service
+!/E14/.config/systemd/user/e14-music-island.service
+!/E14/.config/systemd/user/e14-right-islands.service
 !/E14/.config/mimeapps.list
 !/E14/.config/island-shared/fluid-reveal.ts
 !/E14/.config/island-shared/style.css

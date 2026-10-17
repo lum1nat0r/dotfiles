@@ -61,38 +61,9 @@ local powerMenu = os.getenv("HOME") .. "/.config/hypr/scripts/power-menu.sh"
 
 -- See https://wiki.hypr.land/Configuring/Basics/Autostart/
 
--- Autostart necessary processes (like notifications daemons, status bars, etc.)
--- Or execute your favorite apps at launch like this:
---
-hl.on("hyprland.start", function () 
-    -- Reconnect portals after a new compositor session, including a relogin.
-    hl.exec_cmd(
-        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE" ..
-        " && systemctl --user restart xdg-desktop-portal-hyprland.service" ..
-        " && systemctl --user restart xdg-desktop-portal.service"
-    )
-    hl.exec_cmd("wl-paste --type text --watch cliphist store")
-    hl.exec_cmd("wl-paste --type image --watch cliphist store")
-    hl.exec_cmd(terminal)
-    --  hl.exec_cmd("nm-applet")
-    hl.exec_cmd("waybar")
-    hl.exec_cmd("swaync")
-    hl.exec_cmd("hypridle")
-    hl.exec_cmd("handy --start-hidden")
-    hl.exec_cmd("nm-applet --indicator")
-    hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
-    -- Liquid Glass Islands
-    -- GTK 4.24's empty client blur region overrides layer rules, including Cairo hover cards.
-    hl.exec_cmd(
-        "env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 ags run " .. os.getenv("HOME") ..
-        "/.config/music-island/app.tsx"
-    )
-
-    -- AGS 3.1 shares $XDG_RUNTIME_DIR/ags.js; wait until the first app has loaded it.
-    hl.exec_cmd(
-        "gdbus wait --session io.Astal.music-island && env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 ags run " .. os.getenv("HOME") ..
-        "/.config/right-islands/app.tsx"
-    )
+-- Background services belong to systemd; the initial terminal remains a normal window.
+hl.on("hyprland.start", function()
+    hl.exec_cmd('sh "$HOME/.config/hypr/scripts/start-session.sh" && ' .. terminal)
 end)
 
 
@@ -303,6 +274,8 @@ hl.config({
     misc = {
         force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
         disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
+        key_press_enables_dpms  = true,
+        mouse_move_enables_dpms = true,
     },
 })
 
@@ -357,7 +330,7 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 -- hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.exec_cmd(powerMenu))
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo())
 local handyHeld = false

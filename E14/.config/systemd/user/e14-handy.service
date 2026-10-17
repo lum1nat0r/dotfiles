@@ -1,0 +1,11 @@
+[Unit]
+Description=Handy background dictation
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+ExecStart=/usr/bin/handy --start-hidden
+Restart=on-failure
+TimeoutStopSec=5
+Slice=session.slice

@@ -1,0 +1,12 @@
+[Unit]
+Description=Bind the E14 desktop services to the current Hyprland process
+PartOf=e14-session.target
+ConditionEnvironment=E14_HYPRLAND_PID
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/waitpid --exited ${E14_HYPRLAND_PID}
+ExecStopPost=/usr/bin/systemctl --user stop hyprlock-dpms.*
+ExecStopPost=/usr/bin/systemctl --user unset-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE E14_HYPRLAND_PID
+TimeoutStopSec=5
+Slice=session.slice
