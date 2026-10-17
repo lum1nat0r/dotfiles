@@ -374,6 +374,9 @@ Install `hypridle` (v0.1.8 or newer), `hyprlock` and systemd's `systemd-ac-power
 on AC, using the existing Hyprlock PAM/fingerprint configuration without a grace
 period. It adds no automatic suspend or dimming.
 
+`Super+L` locks the session through `loginctl lock-session`, using the same
+Hypridle lock command. The former `Super+M` logout shortcut is unbound.
+
 Both listeners share the same inactivity cycle. After 5 idle minutes on AC,
 Hypridle retries `! systemd-ac-power` every 5 seconds; unplugging can therefore
 lock within roughly 5–10 seconds without restarting the timer. User activity
@@ -723,6 +726,58 @@ multi-monitor visual hover/contour checks, compositor-level input passthrough
 and the live media-loss producer scenario remain unverified. No media, audio,
 network, Bluetooth or power action was invoked. Test display services and
 temporary tools are not managed configuration.
+
+### Battery charge limit
+
+The Stats hover card includes **Bis … % laden**, adjustable from **70% to 100%**
+in **5-point steps**. The initial limit is **80%**. Charging resumes five points
+below the selected stop threshold; lowering the limit does not forcibly discharge
+an already fuller battery. At 100%, the original 95%/100% thresholds are restored.
+
+`charge-limit/` contains the root-owned system integration, installed separately
+from the home-directory Stow package:
+
+```sh
+pkexec /bin/sh "$PWD/charge-limit/install.sh"
+python3 tests/charge-limit.py
+```
+
+The installer copies the isolated Python helper to
+`/usr/local/libexec/e14-charge-limit`, the boot unit to
+`/etc/systemd/system/e14-charge-limit.service` and the narrow Polkit rule to
+`/etc/polkit-1/rules.d/49-e14-charge-limit.rules`. Only local, active `wheel`
+sessions may invoke that helper without another password prompt. The helper
+accepts only the seven supported limits or `--restore`, and has fixed battery
+and state paths; it does not execute commands or load code from the home directory.
+Do not grant passwordless access to Python, a shell or the user-owned source file.
+
+This E14 profile uses BAT0's native `charge_control_start_threshold` and
+`charge_control_end_threshold`; it does not emulate a cutoff with power profiles.
+Successful choices are stored atomically in `/var/lib/e14-charge-limit/limit`,
+outside Git, and restored by the enabled system service at boot. Firmware
+readback failure leaves the saved choice unchanged and is shown in the hover card.
+The E14 controller transiently reports 0%/100% after a write. A kernel function
+trace excluded another sysfs writer and measured recovery after about 2.3 seconds.
+The helper therefore waits three seconds under its exclusive lock before
+verifying and saving; the slider is disabled and shows a progress message during
+that interval. The panel reads the last firmware-confirmed saved choice rather
+than transient EC readings. The slider snaps mouse/keyboard/accessibility changes
+to five-point steps and debounces writes for 300ms. Both monitor panels share
+the saved hardware setting.
+Only the right-islands user service needs restarting after widget edits; existing
+Stow file links remain in place.
+
+Verification: all seven values were applied through the real GTK accessibility
+slider and confirmed against both sysfs thresholds and saved state. Off-step
+83%/72% requests snapped to 85%/70%; a rapid 83→87→92 sequence saved only the final
+90% choice. Both monitor hover cards and the disabled/progress state were checked
+visually. The final setting is 75%/80%. All six helper regressions passed,
+including delayed firmware, refusal without saving, invalid input and restoring
+a saved choice after a simulated firmware reset. The installed `--restore` path
+also returned 80%; the boot unit is enabled. AGS bundling, unit validation and
+Gitleaks passed. A real reboot, suspend/resume and a physical charge cycle were
+not exercised.
+
 
 ### Native power menu
 

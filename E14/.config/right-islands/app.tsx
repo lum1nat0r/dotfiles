@@ -2,7 +2,7 @@ import app from "ags/gtk4/app";
 import { Astal, Gtk, Gdk } from "ags/gtk4";
 import { createPoll } from "ags/time";
 import { execAsync, subprocess } from "ags/process";
-import { createState, createBinding, For, onCleanup } from "ags";
+import { createState, createBinding, createComputed, createEffect, For, onCleanup } from "ags";
 import GLib from "gi://GLib";
 import { createFluidReveal } from "../island-shared/fluid-reveal";
 
@@ -14,6 +14,7 @@ const empty = {
   temp: null as number | null,
   battery: null as number | null,
   charging: false,
+  chargeLimit: null as number | null,
   wifi: false,
   ssid: "",
   bluetooth: false,
@@ -116,6 +117,36 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
       console.error(e);
     }
   };
+  const [chargeLimit, setChargeLimit] = createState<number | null>(null);
+  const [chargeBusy, setChargeBusy] = createState(false);
+  const [chargeError, setChargeError] = createState("");
+  let chargeTimer = 0;
+  let syncingChargeSlider = false;
+  createEffect(() => {
+    const actual = info().chargeLimit;
+    if (!chargeBusy.peek() && !chargeTimer) setChargeLimit(actual);
+  });
+  const changeChargeLimit = (limit: number) => {
+    setChargeLimit(limit);
+    setChargeError("");
+    if (chargeTimer) GLib.source_remove(chargeTimer);
+    chargeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
+      chargeTimer = 0;
+      setChargeBusy(true);
+      void execAsync(["pkexec", "/usr/local/libexec/e14-charge-limit", String(limit)])
+        .catch((error) => {
+          if (disposed) return;
+          console.error(error);
+          setChargeLimit(info.peek().chargeLimit);
+          setChargeError("Ladegrenze konnte nicht gesetzt werden");
+        })
+        .finally(() => { if (!disposed) setChargeBusy(false); });
+      return GLib.SOURCE_REMOVE;
+    });
+  };
+  onCleanup(() => {
+    if (chargeTimer) GLib.source_remove(chargeTimer);
+  });
   const meter = (title: string, value: any) => (
     <box orientation={Gtk.Orientation.VERTICAL} spacing={4}>
       <box>
@@ -157,6 +188,60 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
               label={info(
                 (d) => `${d.battery ?? 0}%${d.charging ? " · Laden" : ""}`,
               )}
+            />
+          </box>
+          <box
+            visible={info((d) => d.battery !== null)}
+            orientation={Gtk.Orientation.VERTICAL}
+            spacing={6}
+          >
+            <box>
+              <label label="Bis" hexpand xalign={0} />
+              <label label={chargeLimit((limit) =>
+                limit === null ? "Nicht unterstützt" : `${limit} % laden`)} />
+            </box>
+            <slider
+              min={70}
+              max={100}
+              step={5}
+              page={5}
+              roundDigits={0}
+              drawValue={false}
+              sensitive={createComputed(() => !chargeBusy() && info().chargeLimit !== null)}
+              tooltipText="Akkuschonung: 70–100 % in 5er-Schritten"
+              $={(self) => {
+                self.update_property([Gtk.AccessibleProperty.LABEL], ["Ladegrenze"]);
+                createEffect(() => {
+                  syncingChargeSlider = true;
+                  self.set_value(chargeLimit() ?? 70);
+                  syncingChargeSlider = false;
+                });
+              }}
+              onValueChanged={(self) => {
+                if (syncingChargeSlider || chargeLimit.peek() === null ||
+                    chargeBusy.peek()) return;
+                const limit = Math.max(70, Math.min(100, Math.round(self.get_value() / 5) * 5));
+                syncingChargeSlider = true;
+                self.set_value(limit);
+                syncingChargeSlider = false;
+                if (limit !== chargeLimit.peek()) changeChargeLimit(limit);
+              }}
+            />
+            <box>
+              <label label="70 %" hexpand xalign={0} />
+              <label label="100 %" />
+            </box>
+            <label
+              visible={chargeBusy}
+              label="Ladegrenze wird übernommen …"
+              xalign={0}
+            />
+            <label
+              visible={chargeError((error) => error !== "")}
+              label={chargeError}
+              wrap
+              maxWidthChars={32}
+              xalign={0}
             />
           </box>
         </box>

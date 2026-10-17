@@ -50,10 +50,13 @@ temp=round(sorted(candidates)[0][1]) if candidates else None
 bats=list(pathlib.Path('/sys/class/power_supply').glob('BAT*'))
 battery=percent(read(bats[0]/'capacity')) if bats else None
 charging=read(bats[0]/'status').lower() in ('charging','full') if bats else False
+# Display the last firmware-confirmed choice, not transient EC query values.
+try: charge_limit=int(read('/var/lib/e14-charge-limit/limit')) if bats else None
+except ValueError: charge_limit=None
 wifi=run('nmcli','-t','-f','WIFI','general').lower()=='enabled'
 # Read NetworkManager's cached access points; status updates must not trigger scans.
 ssid=run('nmcli','-t','-f','ACTIVE,SSID','dev','wifi','--rescan','no').splitlines()
 ssid=next((s.split(':',1)[1] for s in ssid if s.startswith('yes:')), '')
 bt=run('bluetoothctl','show')
 bt_on='Powered: yes' in bt
-print(json.dumps({'cpu':cpu,'ram':ram,'temp':temp,'battery':battery,'charging':charging,'wifi':wifi,'ssid':ssid,'bluetooth':bt_on}))
+print(json.dumps({'cpu':cpu,'ram':ram,'temp':temp,'battery':battery,'charging':charging,'chargeLimit':charge_limit,'wifi':wifi,'ssid':ssid,'bluetooth':bt_on}))
