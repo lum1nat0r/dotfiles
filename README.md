@@ -190,7 +190,8 @@ the initial Kitty terminal as a normal application window. A configuration reloa
 does not rerun autostart. The background desktop has one owner: the systemd user
 manager, grouped under `e14-session.target`.
 
-The bootstrap resolves the PID for the current `HYPRLAND_INSTANCE_SIGNATURE`,
+The bootstrap waits up to five seconds for the first complete PID line in
+`$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/hyprland.lock`,
 stops the old target, graphical session and lifetime watcher completely, and only
 then imports the current display environment into D-Bus/systemd. Waiting for all
 three stop jobs prevents old-session cleanup from erasing the new environment.
@@ -233,6 +234,27 @@ This intentionally restarts the desktop services, not application windows; do no
 run it during dictation or a portal screen-sharing session. For individual changes,
 use `systemctl --user restart UNIT` and inspect `journalctl --user -u UNIT`.
 `systemctl --user start e14-session.target` is a no-op while already active.
+
+The Hyprland start hook sends bootstrap output and errors to the user
+journal under `e14-session-start`; Hyprland otherwise discards spawned commands'
+stdout/stderr. Inspect the automatic login attempt with:
+
+```sh
+journalctl --user -b -t e14-session-start --no-pager
+```
+
+The login trace exposed a startup race: `hyprland.start` can run before the current
+instance's PID file is published. The previous `hyprctl -j instances` pipeline
+then returned invalid JSON and aborted before starting any desktop services.
+Waiting for the specific PID file removes both instance enumeration and its JSON
+parser. A timeout aborts before stopping services or changing the manager environment.
+
+`python3 tests/session-start.py` covers a delayed, incomplete PID line while another
+instance exists, and a missing PID file without desktop side effects. Both checks
+passed. The corrected bootstrap started the real target, watcher, Waybar and both
+islands; a desktop capture confirmed bars on both monitors. Config reload and
+Gitleaks passed. The temporary shell trace has been removed; errors remain journaled.
+A fresh logout/login after this fix has not yet been exercised.
 
 Verification exercised the actual bootstrap and services, repeated target starts
 and Hyprland reloads without extra processes, and checked notification/portal/island
@@ -788,6 +810,43 @@ after restarting VS Code. The initially encrypted keyring was subsequently
 changed to an empty password at the user's request. Its file remains mode
 `0600`, but is plaintext. Secret Service store/read succeeded after restarting
 the daemon without a password prompt. A full desktop reboot was not exercised.
+
+### 1Password fingerprint unlock
+
+1Password for Linux uses Polkit for system authentication. An enrolled
+fingerprint and working SDDM/Hyprlock unlock do not enable it for Polkit:
+Arch's vendor `/usr/lib/pam.d/polkit-1` includes `system-auth`, which on this
+machine authenticates by password only.
+
+The host-local override `/etc/pam.d/polkit-1` contains:
+
+```pam
+#%PAM-1.0
+
+# Try the enrolled fingerprint, then fall back to the system password.
+auth       sufficient   pam_fprintd.so max-tries=3 timeout=15
+auth       include      system-auth
+account    include      system-auth
+password   include      system-auth
+session    include      system-auth
+```
+
+Keep this file root-owned, mode `0644`, outside Stow. It applies to all Polkit
+authentication, not just 1Password; `system-auth`, SDDM, Hyprlock and sudo remain
+unchanged. Fingerprint authentication for privileged actions carries the
+[fingerprint-hijacking risk documented by Arch](https://wiki.archlinux.org/title/Fprint#Login_configuration).
+The password fallback starts after fingerprint failure or the 15-second timeout.
+Removing this local override restores the vendor PAM configuration.
+
+In 1Password, enable **Settings > Security > Unlock using system authentication**.
+After starting/restarting 1Password, unlock once with the account password
+before using the fingerprint icon on subsequent unlocks; see
+[1Password's system-authentication guide](https://support.1password.com/system-authentication-linux/).
+No 1Password profile, vault data or biometric enrollment belongs in this repository.
+
+Verification: an interactive `pkcheck` for
+`com.1password.1Password.unlock` completed successfully after installing the
+override. Unlocking a real vault and the password fallback were not exercised.
 
 ### Local dictation with Handy
 

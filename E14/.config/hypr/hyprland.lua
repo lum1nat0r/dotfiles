@@ -63,7 +63,7 @@ local powerMenu = os.getenv("HOME") .. "/.config/hypr/scripts/power-menu.sh"
 
 -- Background services belong to systemd; the initial terminal remains a normal window.
 hl.on("hyprland.start", function()
-    hl.exec_cmd('sh "$HOME/.config/hypr/scripts/start-session.sh" && ' .. terminal)
+    hl.exec_cmd('systemd-cat --identifier=e14-session-start sh "$HOME/.config/hypr/scripts/start-session.sh" && ' .. terminal)
 end)
 
 

@@ -1,10 +1,16 @@
 #!/bin/sh
 set -eu
 
-compositor_pid=$(hyprctl -j instances | python3 -c '
-import json, sys
-print(next(item["pid"] for item in json.load(sys.stdin) if item["instance"] == sys.argv[1]))
-' "$HYPRLAND_INSTANCE_SIGNATURE")
+# The start event can precede Hyprland publishing its instance/PID file.
+compositor_pid=$(timeout 5 sh -c '
+    until { IFS= read -r pid < "$1"; } 2>/dev/null; do
+        sleep 0.05
+    done
+    printf "%s\n" "$pid"
+' sh "$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/hyprland.lock") || {
+    printf "%s\n" "Hyprland PID file was not ready within 5 seconds" >&2
+    exit 1
+}
 
 # Stop old clients before replacing the user manager's display environment.
 systemctl --user stop e14-session.target graphical-session.target e14-session-watch.service
