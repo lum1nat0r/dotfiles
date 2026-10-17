@@ -24,6 +24,21 @@ before restoring the link; do not overwrite either version blindly.
 are linked; application directories remain real directories. Newly generated
 files in `~/.config` therefore stay outside the repository.
 
+## Persistent assistant rule
+
+`E14/.omp/agent/RULES.md` is linked to `~/.omp/agent/RULES.md`.
+OMP loads it as a user-level sticky rule regardless of the working directory.
+It tells the assistant to apply this dotfiles workflow whenever a task touches
+`~/.config` or a managed dotfile, even if the user does not mention the repo.
+
+The rule is versioned like the other configuration files; OMP databases,
+credentials, session history and caches remain local. Changes take effect in
+the next session or after `/new` or `/clear`. Native rule discovery must remain
+enabled; `--no-rules` disables it, and named profiles use separate agent directories.
+
+Loading was verified in real OMP startups from both `~/.config` and `/tmp`,
+checking the assembled request before transport dispatch without model inference.
+
 ## Setup and deployment
 
 On Arch Linux, install the deployment and secret-scanning tools:
@@ -78,7 +93,7 @@ for newer local changes.
 
 ## What belongs in E14
 
-The package contains 21 explicitly reviewed files:
+The package contains explicitly reviewed configuration files:
 
 - Bash interactive settings and login sourcing.
 - Hyprland Lua configuration, Hyprlock configuration and the Wofi launcher.
@@ -86,6 +101,7 @@ The package contains 21 explicitly reviewed files:
 - The music-island and right-islands widget sources/styles/helpers.
 - VS Code's CSS/JSONC formatter selections, KIO delete confirmation and
   pavucontrol preferences.
+- OMP's global sticky rule for the dotfiles workflow.
 
 Monitor, keyboard and other E14 hardware preferences intentionally stay in this
 machine profile. Hyprlock's PAM/fingerprint settings are preserved unchanged;
