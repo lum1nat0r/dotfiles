@@ -463,6 +463,37 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = tr
 -- See https://wiki.hypr.land/Configuring/Basics/Window-Rules/
 -- and https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
 
+-- Follow newly opened application windows to their assigned workspace.
+hl.window_rule({
+    name = "terminal-workspace",
+    match = { class = "^kitty$" },
+    workspace = "1",
+})
+
+hl.window_rule({
+    name = "firefox-workspace",
+    match = { class = "^firefox$" },
+    workspace = "2",
+})
+
+hl.window_rule({
+    name = "vscode-workspace",
+    match = { class = "^com\\.microsoft\\.VSCode$" },
+    workspace = "3",
+})
+
+hl.window_rule({
+    name = "orcaslicer-workspace",
+    match = { class = "^orca-slicer$" },
+    workspace = "4",
+})
+
+hl.window_rule({
+    name = "spotify-workspace",
+    match = { class = "^Spotify$" },
+    workspace = "5",
+})
+
 -- Example window rules that are useful
 
 local suppressMaximizeRule = hl.window_rule({

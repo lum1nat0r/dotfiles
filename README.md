@@ -182,6 +182,25 @@ Widget artwork/telemetry caches remain outside the package. Runtime SSIDs,
 media metadata, clipboard contents and notifications must not be saved into
 repository files.
 
+## Application workspaces
+
+`E14/.config/hypr/hyprland.lua` assigns newly opened windows by application class:
+
+| Application | Class | Workspace |
+| --- | --- | --- |
+| Kitty terminal | `kitty` | 1 |
+| Firefox | `firefox` | 2 |
+| VS Code | `com.microsoft.VSCode` | 3 |
+| OrcaSlicer | `orcaslicer` | 4 |
+| Spotify | `Spotify` | 5 |
+
+Opening a matching window switches to its destination workspace (no `silent`).
+Existing windows are not moved by a reload, and autostart is unchanged.
+Reload with `hyprctl reload`; no restow is needed for this existing file link.
+Verified on the running compositor with temporary Kitty windows advertising each
+class: all four landed on their assigned workspace and switched focus there.
+The actual Firefox, VS Code and Spotify processes were not restarted.
+
 ## MX Master 3S workspace gestures
 
 `logiops/logid.cfg` maps the thumb-rest gesture button (`0xc3`) to horizontal
