@@ -9,6 +9,7 @@
 !/E14/.config/Code/User/settings.json
 !/E14/.config/hypr/hyprland.lua
 !/E14/.config/hypr/hyprlock.conf
+!/E14/.config/hypr/hypridle.conf
 !/E14/.config/hypr/scripts/handy-paste.py
 !/E14/.config/hypr/scripts/launch-wofi.sh
 !/E14/.config/hypr/scripts/power-menu.sh

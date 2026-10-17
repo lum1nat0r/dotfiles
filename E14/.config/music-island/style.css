@@ -47,5 +47,17 @@ window.music-window, .center-row { background: transparent; }
 .track-artist, .times { font-size: 11px; color: #c3cfe1; }
 .progress trough { min-height: 5px; background: rgba(255,255,255,0.15); border-radius: 5px; }
 .progress block.filled { background: #b5d7ff; border-radius: 5px; }
-.player-controls button { background: rgba(255,255,255,0.08); border: none; border-radius: 18px; padding: 8px 12px; font-size: 20px; }
-.player-controls button.primary { background: rgba(175,205,255,0.26); }
+.player-controls button {
+    background-color: rgba(255,255,255,0.08);
+    background-image: radial-gradient(ellipse at center, rgba(205, 230, 255, 0.24), rgba(165, 200, 255, 0.12) 55%, rgba(165, 200, 255, 0) 100%);
+    background-size: 0% 0%;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-size 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    border: none;
+    border-radius: 18px;
+    padding: 8px 12px;
+    font-size: 20px;
+}
+.player-controls button.primary { background-color: rgba(175,205,255,0.26); }
+.player-controls button:hover { background-size: 180% 180%; }

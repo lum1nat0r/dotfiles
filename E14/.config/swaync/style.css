@@ -50,14 +50,21 @@
 .widget-title > label { font-size: 17px; font-weight: 700; color: #eff5ff; }
 .widget-dnd label { font-size: 12px; color: #b7c8de; }
 .widget-title > button, .widget-inhibitors > button, .notification-action > button {
-  background: rgba(165, 200, 255, 0.14);
+  background-color: rgba(165, 200, 255, 0.14);
+  background-image: radial-gradient(ellipse at center, rgba(205, 230, 255, 0.24), rgba(165, 200, 255, 0.12) 55%, rgba(165, 200, 255, 0) 100%);
+  background-size: 0% 0%;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-size 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   color: #eff5ff;
   padding: 7px 10px;
   box-shadow: none;
 }
-.widget-title > button:hover, .notification-action > button:hover { background: rgba(165, 200, 255, 0.25); }
+.widget-title > button:hover, .widget-inhibitors > button:hover, .notification-action > button:hover {
+  background-size: 180% 180%;
+}
 button:focus-visible { outline: 2px solid #b5d7ff; outline-offset: -2px; }
 switch { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.15); }
 switch:checked { background: rgba(165, 200, 255, 0.45); }

@@ -1,0 +1,10 @@
+[SddmGreeterTheme]
+Name=E14 Glass
+Description=Compact centered login on a solid background
+Type=sddm-theme
+Version=1.2
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=e14-glass
+Theme-API=2.0
+QtVersion=6

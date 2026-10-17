@@ -85,6 +85,11 @@ class PowerMenu(Gtk.Window):
                 row.pack_start(button, False, False, 0)
                 self.buttons.append(button)
 
+        for button in self.buttons:
+            button.add_events(Gdk.EventMask.POINTER_MOTION_MASK)
+            for signal in ("enter-notify-event", "motion-notify-event"):
+                button.connect(signal, lambda button, _event: button.grab_focus())
+
     def finish(self, _button, answer):
         print(answer, flush=True)
         self.destroy()

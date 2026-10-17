@@ -15,11 +15,16 @@
 .power-tile,
 .confirmation-button {
     background-color: rgba(165, 200, 255, 0.14);
+    background-image: radial-gradient(ellipse at center, rgba(205, 230, 255, 0.24), rgba(165, 200, 255, 0.12) 55%, rgba(165, 200, 255, 0) 100%);
+    background-size: 0% 0%;
+    background-position: center;
+    background-repeat: no-repeat;
     color: #eff5ff;
     border: 1px solid transparent;
     border-radius: 16px;
     padding: 16px;
-    transition: background-color 120ms ease, border-color 120ms ease;
+    transition: background-size 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                background-color 220ms ease, border-color 220ms ease;
 }
 
 .power-tile {
@@ -28,8 +33,10 @@
 }
 
 .power-tile:hover,
-.confirmation-button:hover {
-    background-color: rgba(165, 200, 255, 0.24);
+.power-tile:focus,
+.confirmation-button:hover,
+.confirmation-button:focus {
+    background-size: 180% 180%;
 }
 
 .power-tile:focus,

@@ -126,7 +126,7 @@ Oh My Zsh loading, Git aliases and completion security.
 The package contains explicitly reviewed configuration files:
 
 - Bash interactive settings/login sourcing and Zsh/Oh My Zsh preferences.
-- Hyprland Lua configuration, Hyprlock configuration and the Wofi launcher.
+- Hyprland Lua configuration, Hyprlock/Hypridle configuration and the Wofi launcher.
 - Waybar, SwayNC and Wofi configuration/styles and the notification helper.
 - The music-island and right-islands widget sources/styles/helpers.
 - VS Code's CSS/JSONC formatter selections, KIO delete confirmation and
@@ -151,6 +151,93 @@ The following remain local and are not deployed or changed by Stow:
 Widget artwork/telemetry caches remain outside the package. Runtime SSIDs,
 media metadata, clipboard contents and notifications must not be saved into
 repository files.
+
+## Power-aware idle lock
+
+Install `hypridle` (v0.1.8 or newer), `hyprlock` and systemd's `systemd-ac-power`.
+`E14/.config/hypr/hypridle.conf` locks after 5 minutes on battery or 15 minutes
+on AC, using the existing Hyprlock PAM/fingerprint configuration without a grace
+period. It adds no suspend, dimming or display-power actions.
+
+Both listeners share the same inactivity cycle. After 5 idle minutes on AC,
+Hypridle retries `! systemd-ac-power` every 5 seconds; unplugging can therefore
+lock within roughly 5–10 seconds without restarting the timer. User activity
+cancels pending retries. Power-query failures use the shorter timeout.
+Standard Wayland, D-Bus and systemd idle inhibitors remain respected, including
+OMP's active-session inhibitor.
+
+The existing `hyprland.start` Lua callback starts Hypridle once per session;
+reloading the configuration does not rerun that callback. Do not also enable
+`hypridle.service`. To activate in an existing session, only when
+`pgrep -x hypridle` finds no process:
+
+```sh
+hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'
+```
+
+Short-timeout verification used real Hypridle/Hyprlock and real AC detection.
+Battery, unplug and retry-cancellation scenarios used only a temporary
+power-source simulator, not a physical unplug. Repeated lock requests kept one
+Hyprlock process; the user confirmed the existing Power-menu Lock action and
+manual unlocking. Test scripts, screenshots and logs stay outside the repository.
+Production-duration timing and automatic startup on the next login are separate
+checks; do not log out with unsaved work just to test them.
+
+## SDDM: E14 Glass
+
+`sddm/e14-glass/` is a standalone Qt6 login theme with a solid dark background,
+small field labels, compact centered login controls and bottom power actions.
+It is **not** a Stow package: the pre-login greeter must load root-owned copies,
+never symlinks into a user's writable home. E14, `.gitignore`, PAM, fingerprint,
+autologin, the display server and session startup remain unchanged.
+There is no wallpaper or profile image. Small session and keyboard selectors sit
+in the bottom-right corner; no home-directory assets are loaded.
+Usernames remain editable, and SDDM's native session/keyboard models are retained.
+The clock is real; battery/network indicators and unsupported sleep actions are
+not imitated.
+
+From the repository root, check the two isolated form regressions and preview:
+
+```sh
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
+  /usr/lib/qt6/bin/qmltestrunner -input sddm/tests
+sddm-greeter-qt6 --test-mode --theme "$PWD/sddm/e14-glass"
+gitleaks dir --redact --no-banner sddm
+```
+
+Test mode has no authentication daemon. Use only synthetic passwords; do not
+invoke power actions. It cannot verify a real login, PAM or keyring integration.
+Check both desktop monitor sizes and scrolling/focus at 640×480 before installing.
+Required runtime modules are Qt6 Quick, Layouts and Controls.Basic; tests use
+QtTest/QuickTest. No virtual-keyboard module, special font or runtime blur addon
+is required.
+
+Before installing, inspect `/usr/lib/sddm/sddm.conf.d/`, `/etc/sddm.conf.d/` and
+`/etc/sddm.conf` (in that precedence order, last wins). Back up any replaced files
+under `/var/backups/sddm-e14-glass/<timestamp>/`, retaining their relative paths
+and a 0700 backup root. Resolve competing `[Theme]` `Current`/`ThemeDir` entries
+without changing other settings. Preserve unknown files in an existing theme
+directory; install only these three files:
+
+```sh
+sudo install -d -m 0755 /usr/local/share/sddm/themes/e14-glass /etc/sddm.conf.d
+sudo install -o root -g root -m 0644 \
+  sddm/e14-glass/Main.qml sddm/e14-glass/metadata.desktop \
+  sddm/e14-glass/theme.conf /usr/local/share/sddm/themes/e14-glass/
+sudo install -o root -g root -m 0644 \
+  sddm/e14-glass.conf /etc/sddm.conf.d/e14-glass.conf
+```
+
+Verify root:root/0644, non-writable directories, matching source/destination
+hashes and readability of each theme file with `sudo -u sddm test -r <file>`.
+Preview `/usr/local/share/sddm/themes/e14-glass` using the same greeter command,
+and check the effective theme directives, not `sddm --example-config`.
+Do **not** restart SDDM: selection applies when the greeter next appears normally.
+
+To roll back, remove only the newly introduced
+`/etc/sddm.conf.d/e14-glass.conf`, or restore its backed-up predecessor and any
+competing theme directives changed during installation. The inactive root-owned
+theme may remain. No Stow operation is involved.
 
 ## Review and commit workflow
 
@@ -217,6 +304,34 @@ The hook was checked with clean data, a synthetic staged token and a missing
 scanner. No compositor reload, lock/authentication attempt or application
 restart was needed for the file-link migration.
 
+### Center-out hover lighting
+
+Waybar workspace buttons, Wofi entries, power-menu tiles/confirmation buttons,
+right-islands tiles, music player controls and notification-center action buttons
+use a soft radial highlight that grows from the element's center over 420ms.
+The same transition retracts on pointer exit and reverses from its current
+state on re-entry. Only the background changes; labels, hit targets and layout
+stay fixed. Active-workspace, urgent, keyboard-focus and pressed fills remain
+separate from the hover light.
+
+The SDDM source uses a centered, expanding rounded highlight with the same
+duration. This approximates the spreading illumination and fluid motion in
+Apple's [Meet Liquid Glass](https://developer.apple.com/videos/play/wwdc2025/219/),
+not its real-time refraction. Apple's
+[Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)
+also recommends reserving the material for controls and preserving legibility.
+
+Verification loaded all six stylesheets in their GTK3/GTK4 parsers, exercised
+the real power-menu widgets in an isolated Broadway display, and rendered a
+GTK4 tile with hover/exit. An isolated Qt smoke exercised centered growth,
+exit/re-entry, stable button geometry and disabling during authentication;
+the existing greeter regressions also passed. No power/authentication action
+was invoked. Waybar/SwayNC styles were reloaded and both AGS islands restarted
+in sequence; a desktop capture confirmed the islands on both monitors.
+Existing Stow file links remain unchanged. The root-owned SDDM installation
+was not updated because noninteractive sudo required a password; use the
+backup/install procedure above before expecting this effect at login.
+
 ### Native power menu
 
 `Super+P` runs `~/.config/hypr/scripts/power-menu.sh`; pseudo-tiling moves to
@@ -228,6 +343,12 @@ Its stylesheet remains at `wofi/powermenu.css`; the app launcher does not load i
 Five equal 146×166 logical-pixel tiles form a compact, centered horizontal group
 with 16px gaps, 48px icons above 17px labels and no enclosing frame. Arrow keys,
 Home/End and Tab move focus; Enter/Space activate it and Escape cancels.
+Entering a tile or moving the pointer within it also moves keyboard focus there,
+including in confirmation dialogs. Arrow-key navigation continues from that
+tile; a stationary pointer does not override keyboard navigation. Leaving a
+tile keeps its selection. Hover alone never activates an action.
+Keyboard focus triggers the same 420ms center-out highlight as hover, including
+on confirmation buttons; the focus border remains visible.
 To compensate font sidebearings, all icons except Sleep have a 5px optical
 left shift; captions and tile geometry remain centered and unchanged.
 The `power-menu` layer namespace shares the `launcher-glass` blur rule with Wofi.
@@ -254,6 +375,14 @@ actions and rejection of the former Hibernate selection. The actual GTK
 widgets were rendered in an isolated Broadway display: equal tile dimensions,
 16px gaps, symmetric side margins in a 1568px window, centered icon/label
 alignment, keyboard navigation/activation and Enter-to-cancel were exercised.
+Hover-focus verification used the actual widgets on an isolated Broadway
+display: tile entry selected Sleep, Right selected Shutdown, pointer movement
+within Sleep selected it again, and leaving preserved that selection. Space
+then emitted Sleep. Hovering the confirmation button followed by Enter emitted
+`Bestätigen`. These previews ran the GTK class directly, without the shell
+dispatcher, so no actual power command ran.
+Keyboard-only Arrow/Tab navigation also rendered the radial highlight on tiles
+and confirmation buttons, verified visually and with intermediate pixel samples.
 Wayland layer-shell setup was bypassed only in that disposable layout harness.
 Live desktop checks (blur, both monitors, overlay over Waybar and launcher style)
 remain unverified because Computer control acquisition returned
