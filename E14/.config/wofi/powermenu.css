@@ -1,14 +1,67 @@
-window {
-    /* properties for window widget */
-    width:                       800px;
-    /* opacity:                    1.0; */
+* {
+    font-family: "JetBrainsMono Nerd Font", sans-serif;
+    font-size: 17px;
+    border: none;
+    box-shadow: none;
+    text-shadow: none;
+    background-image: none;
+}
 
-    /* properties for all widgets */
-    margin:                      0px;
-    padding:                     0px;
-    border:                      0px solid;
-    border-radius:               10px;
-    border-color:                blue;
-    cursor:                      "default";
-    background-color:            red;
+#power-menu {
+    background-color: rgba(20, 25, 40, 0.45);
+    color: #eff5ff;
+}
+
+.power-tile,
+.confirmation-button {
+    background-color: rgba(165, 200, 255, 0.14);
+    color: #eff5ff;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    padding: 16px;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.power-tile {
+    min-width: 112px;
+    min-height: 132px;
+}
+
+.power-tile:hover,
+.confirmation-button:hover {
+    background-color: rgba(165, 200, 255, 0.24);
+}
+
+.power-tile:focus,
+.confirmation-button:focus {
+    background-color: rgba(165, 200, 255, 0.30);
+    border-color: rgba(255, 255, 255, 0.65);
+    outline: none;
+}
+
+.power-tile:active,
+.confirmation-button:active {
+    background-color: rgba(165, 200, 255, 0.38);
+}
+
+.power-icon {
+    font-size: 48px;
+}
+
+/* Extra right space shifts the centered glyph 5px left, not the caption. */
+.power-icon.optical-left {
+    margin-right: 10px;
+}
+
+.power-label {
+    font-size: 17px;
+}
+
+.confirmation-heading {
+    font-size: 22px;
+}
+
+.confirmation-button {
+    min-width: 148px;
+    min-height: 28px;
 }

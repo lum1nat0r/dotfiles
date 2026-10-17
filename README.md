@@ -216,3 +216,132 @@ checked Bash/Lua/Python/JSON syntax, parsed the deployed configuration with
 The hook was checked with clean data, a synthetic staged token and a missing
 scanner. No compositor reload, lock/authentication attempt or application
 restart was needed for the file-link migration.
+
+### Native power menu
+
+`Super+P` runs `~/.config/hypr/scripts/power-menu.sh`; pseudo-tiling moves to
+`Super+Shift+P`. `Super+R` keeps the existing Wofi application launcher and style.
+The power menu's `power-menu.py` is a short-lived GTK3 surface, not a service.
+It requires Python 3/PyGObject, GTK3 and the GtkLayerShell 0.1 introspection API.
+Its stylesheet remains at `wofi/powermenu.css`; the app launcher does not load it.
+
+Five equal 146×166 logical-pixel tiles form a compact, centered horizontal group
+with 16px gaps, 48px icons above 17px labels and no enclosing frame. Arrow keys,
+Home/End and Tab move focus; Enter/Space activate it and Escape cancels.
+To compensate font sidebearings, all icons except Sleep have a 5px optical
+left shift; captions and tile geometry remain centered and unchanged.
+The `power-menu` layer namespace shares the `launcher-glass` blur rule with Wofi.
+An overlay-layer surface anchored to every edge with exclusive zone -1 covers
+the focused output, including Waybar, without changing panel reservations.
+`hyprctl monitors -j` selects the focused output; no offset compensation is needed.
+Confirmations use a compact centered button group over the same full-screen glass.
+
+Lock runs `hyprlock --grace 0`. Sleep runs `systemctl suspend` and **does not
+automatically lock the session**. Hibernate is not offered or dispatched.
+Swap and system power settings are unchanged.
+
+Logout, Shutdown and Reboot require a second dialog. `Abbrechen` is first;
+only an explicit `Bestätigen` proceeds. Escape or an empty/unrecognized answer
+does nothing. Logout uses `hyprshutdown` when installed, otherwise
+`hyprctl dispatch 'hl.dsp.exit()'`; a failing installed `hyprshutdown` does not
+trigger the fallback. Command failures retain their exit code and report the
+diagnostic on stderr and via `notify-send`.
+
+Before Hibernate was removed, an isolated temporary harness covered all six
+actions, cancellation and failure paths in 27 scenarios without access to real
+power commands. After removal, dispatch smoke checks covered the five remaining
+actions and rejection of the former Hibernate selection. The actual GTK
+widgets were rendered in an isolated Broadway display: equal tile dimensions,
+16px gaps, symmetric side margins in a 1568px window, centered icon/label
+alignment, keyboard navigation/activation and Enter-to-cancel were exercised.
+Wayland layer-shell setup was bypassed only in that disposable layout harness.
+Live desktop checks (blur, both monitors, overlay over Waybar and launcher style)
+remain unverified because Computer control acquisition returned
+`Computer session is closed`. No real power or lock action was exercised.
+
+### VS Code credential storage on Hyprland
+
+Install `gnome-keyring` and `libsecret`. Hyprland is not automatically detected
+as a supported keyring desktop by VS Code, so use **Preferences: Configure
+Runtime Arguments** and add `"password-store": "gnome-libsecret"` to the local
+`~/.vscode/argv.json`, then fully quit and reopen VS Code.
+Do not select **Use weaker encryption** or the `basic` backend.
+See the [VS Code credential-store guide](https://code.visualstudio.com/docs/configure/settings-sync#_troubleshoot-credentialstore-issues).
+
+Arch's SDDM PAM configuration already includes GNOME Keyring authentication and
+session hooks. The package enables `gnome-keyring-daemon.socket` system-wide;
+for an existing session, run `systemctl --user start gnome-keyring-daemon.socket`.
+The login keyring must have the internal name `login` and use the same password
+as the Linux account for automatic unlocking on password login. Fingerprint
+login supplies no password, so unlock the keyring once per session when prompted.
+An explicitly chosen empty keyring password avoids the unlock prompt, including
+after fingerprint login, but stores keyring contents unencrypted on disk.
+This changes only the keyring password, not the Linux account password.
+
+Keep `argv.json` local because it also contains an installation identifier.
+Keyrings under `~/.local/share/keyrings/` and VS Code account storage are private
+runtime data and must never be added to this package.
+
+Verification used a temporary VS Code extension and isolated user-data directory:
+SecretStorage store/read/delete succeeded, and a stored test value was readable
+after restarting VS Code. The initially encrypted keyring was subsequently
+changed to an empty password at the user's request. Its file remains mode
+`0600`, but is plaintext. Secret Service store/read succeeded after restarting
+the daemon without a password prompt. A full desktop reboot was not exercised.
+
+### Local dictation with Handy
+
+Install `handy-bin` from the AUR and Arch's `wtype` package. The current
+installation uses Handy 0.9.8; its reviewed AUR recipe repackages the upstream
+release and verifies the downloaded sources with BLAKE2 checksums.
+Updates belong to the package manager, not Handy's built-in updater.
+
+`hyprland.lua` starts `handy --start-hidden` once per compositor session:
+
+| Shortcut | Action |
+| --- | --- |
+| `Super+O` (hold) | Record while O is held; release O to stop and insert the transcription |
+| `Super+Shift+O` | Cancel the current recording/operation without inserting text |
+
+Use these Handy preferences:
+
+| Setting | Value |
+| --- | --- |
+| Model | Parakeet V3 (`parakeet-tdt-0.6b-v3`, local CPU inference) |
+| Language / translation | Automatic detection; translation to English off |
+| Microphone | `pipewire`; PipeWire's default source is the UGREEN webcam |
+| Recording | Push to talk; always-on microphone off |
+| Paste method | External Script |
+| External script | `$HOME/.config/hypr/scripts/handy-paste.py` (expand `$HOME` in the setting) |
+| Overlay / feedback | Overlay off; audio feedback on at 40% |
+| Auto-submit / post-processing | Both off |
+| History / recording retention | Limit 0; preserve only entries within that limit |
+| Model unload | After 5 minutes |
+| Startup | Start hidden; Handy's own login autostart off (Hyprland owns it) |
+| Update checks / logging | Built-in update checks off; log level Warn |
+
+The paste helper uses `Ctrl+Shift+V` in Kitty and `Ctrl+V` elsewhere, then
+restores the previous clipboard payload. Kitty's `Shift+Insert` reads the primary
+selection, so it can insert unrelated selected text instead of the dictation.
+Do not use Handy's Direct Input method with this German keyboard layout.
+Keep the intended input field focused until transcription finishes.
+Hyprland handles the press and release edges through Handy's external toggle
+command. Releasing Super before O still stops on O release. Cancelling clears
+the held state, so the later release cannot start another recording.
+
+Handy's `~/.local/share/com.pais.handy/settings_store.json` remains local:
+the same store can contain API keys and device-specific preferences.
+Models, recordings, history databases, logs and WebKit state also stay outside
+Stow. Only the compositor integration and paste helper are versioned.
+The existing `cliphist` watcher can retain pasted dictations even with Handy's
+history disabled; restoring the clipboard does not remove those history entries.
+
+Verification exercised German synthetic speech through a temporary PipeWire
+source into the real Handy recorder, then into Chromium, Kitty and an isolated
+OMP composer without submitting a message. Clipboard text restoration passed;
+Handy's history table and recording directory were empty afterward. Physical
+microphone quality and a complete desktop relogin were not tested.
+Push-to-talk verification used synthesized key-down/key-up events and an isolated
+PipeWire source: recording remained active while held, stopped on release in
+either modifier order, and stayed idle after a short tap or cancellation.
+

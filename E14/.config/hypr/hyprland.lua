@@ -52,6 +52,7 @@ hl.monitor({
 local terminal    = "kitty"
 local fileManager = "dolphin"
 local menu = os.getenv("HOME") .. "/.config/hypr/scripts/launch-wofi.sh"
+local powerMenu = os.getenv("HOME") .. "/.config/hypr/scripts/power-menu.sh"
 
 
 -------------------
@@ -76,6 +77,7 @@ hl.on("hyprland.start", function ()
     --  hl.exec_cmd("nm-applet")
     hl.exec_cmd("waybar")
     hl.exec_cmd("swaync")
+    hl.exec_cmd("handy --start-hidden")
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
     -- Liquid Glass Islands
@@ -222,8 +224,8 @@ hl.animation({ leaf = "zoomFactor",    enabled = true,  speed = 7,    bezier = "
 -- })
 
 hl.layer_rule({
-    name = "wofi-glass",
-    match = { namespace = "wofi" },
+    name = "launcher-glass",
+    match = { namespace = "wofi|power-menu" },
     blur = true,
     ignore_alpha = 0,
 })
@@ -347,7 +349,27 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 -- hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd(powerMenu))
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo())
+local handyHeld = false
+hl.bind(mainMod .. " + O", function()
+    if not handyHeld then
+        handyHeld = true
+        hl.exec_cmd("handy --toggle-transcription")
+    end
+end)
+-- Release must still stop recording if Super was released before O.
+hl.bind("O", function()
+    if handyHeld then
+        handyHeld = false
+        hl.exec_cmd("handy --toggle-transcription")
+    end
+end, { release = true, ignore_mods = true, non_consuming = true })
+hl.bind(mainMod .. " + SHIFT + O", function()
+    -- A cancelled hold must not start a new recording when O is released.
+    handyHeld = false
+    hl.exec_cmd("handy --cancel")
+end)
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 hl.bind("Print", hl.dsp.exec_cmd(
