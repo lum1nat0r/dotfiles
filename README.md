@@ -208,6 +208,7 @@ This profile assumes one graphical session for this user.
 | Desktop portals | Existing `xdg-desktop-portal` and `xdg-desktop-portal-hyprland` services |
 | Clipboard history | `e14-clipboard@text.service`, `e14-clipboard@image.service` |
 | Dictation and network tray | `e14-handy.service`, `e14-nm-applet.service` |
+| Bluetooth auto-connect | Existing `blueman-applet.service`, with a session lifecycle drop-in |
 | Islands | `e14-music-island.service`, `e14-right-islands.service` |
 
 The target pulls in these services; do not additionally enable them for boot or
@@ -216,6 +217,19 @@ activation now reaches the same SwayNC unit instead of racing a directly started
 daemon. Existing keyring and audio services keep their package-provided lifecycle.
 Private application autostart/account configuration remains local and unchanged.
 The installed SDDM session entry and UWSM selection are unchanged.
+
+The target starts Blueman's applet in the background; opening `blueman-manager`
+is not required for auto-connect. The `session.conf` drop-in ties the packaged
+service to the graphical session. Blueman's existing `AutoConnect` plugin tries
+configured devices on startup, when the adapter is powered on, and every 60
+seconds. Per-device auto-connect choices stay in local GSettings; pairing keys,
+device addresses and names are not copied into the repository. Enable
+auto-connect for a device in Blueman if it is not already configured.
+
+The applet was started in the live session without the manager, and its D-Bus
+plugin list confirmed `AutoConnect` was loaded. BlueZ logged connection attempts
+60 seconds apart, both failing with `Host is down`. Successful reconnection and
+audio remain unverified until the headphones are awake and reachable.
 
 Deploy added files using the Stow procedure above, then load the new unit files:
 

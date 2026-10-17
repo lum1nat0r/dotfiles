@@ -23,6 +23,7 @@
 !/E14/.config/systemd/user/e14-nm-applet.service
 !/E14/.config/systemd/user/e14-music-island.service
 !/E14/.config/systemd/user/e14-right-islands.service
+!/E14/.config/systemd/user/blueman-applet.service.d/session.conf
 !/E14/.config/mimeapps.list
 !/E14/.config/island-shared/fluid-reveal.ts
 !/E14/.config/island-shared/style.css
