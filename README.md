@@ -332,6 +332,66 @@ Existing Stow file links remain unchanged. The root-owned SDDM installation
 was not updated because noninteractive sudo required a password; use the
 backup/install procedure above before expecting this effect at login.
 
+### Native island dropdown motion
+
+The existing music, statistics and controls dropdowns use the shared
+`E14/.config/island-shared/fluid-reveal.ts` GTK4 widget. Each entire card grows
+downward from the bottom centre of its own permanent summary and retracts to
+that same point, not the centre of the wider dropdown. The clock and permanent
+row do not participate in that
+layout; workspace/button hover lighting and the existing card materials remain
+unchanged. Statistics and controls keep independent contours while switching.
+
+The module uses libadwaita's critically damped spring `(1, 1, 500)`, with a
+160ms leave delay in the callers and continuous velocity on reversal. These
+are local tuning values, not Apple's parameters or an exact 420ms duration.
+Full-size child allocation plus a GSK transform avoids per-frame reflow.
+The surface input region follows the displayed card instead of intercepting
+the invisible remainder. GTK's disabled-animation preference is respected.
+Media disappearance closes the player immediately; returning media alone does
+not reopen it.
+
+The compact header's joined contour follows visible spring progress, not popup
+mapping: its bottom border and rounded corners stay intact until 90% expansion,
+and return as soon as shrinking passes below that point. Reentry follows the
+same threshold without a separate timer. Immediate closure and disposal restore
+the compact contour immediately.
+
+Run the real-widget regression on an available GTK display:
+
+```sh
+ags bundle tests/island-fluid-reveal.ts /tmp/island-fluid-reveal-test.js
+ags bundle E14/.config/music-island/app.tsx /tmp/music-island-fluid-smoke.js
+ags bundle E14/.config/right-islands/app.tsx /tmp/right-islands-fluid-smoke.js
+GSK_RENDERER=cairo bash /tmp/island-fluid-reveal-test.js
+```
+
+AGS 3.1 bundles are shell launchers despite the `.js` output name; do not pass
+them directly to `gjs -m`. Alternatively execute `tests/island-fluid-reveal.ts`
+directly. Verification passed on native Wayland and isolated Xvfb (`DISPLAY=:98`,
+`GDK_BACKEND=x11`): intermediate/off-centre bounds, full-size layout, GTK picking,
+stable header dimensions, opening/closing reversals, delayed hiding, disabled
+animations, immediate closure and disposal during motion/driver destruction.
+The fixed top-right attachment during opening and closing also passed the
+real-widget regression on native Wayland.
+Contour-timing checks use both actual island stylesheets on mapped GTK headers:
+the bottom border remains during early growth, disappears at full expansion,
+and returns while the shrinking popup is still visible. Reentry, disabled
+animations, immediate closure and disposal also preserve the correct contour.
+Broadway was attempted with a connected browser but produced JavaScript errors
+and stalled/incorrect frame timings; it was not accepted as animation proof.
+
+The shared source passed Gitleaks and manual personal-data review and was
+deployed as an individual Stow link. Restow required `--ignore='__pycache__'`
+because an existing unrelated Python cache conflicted; neither cache was
+overwritten. Existing source links were preserved. Both deployed applications
+were restarted sequentially and registered successfully. Desktop capture is
+unavailable (`Wayland capture requires the wayland-pipewire feature`), so
+multi-monitor visual hover/contour checks, compositor-level input passthrough
+and the live media-loss producer scenario remain unverified. No media, audio,
+network, Bluetooth or power action was invoked. Test display services and
+temporary tools are not managed configuration.
+
 ### Native power menu
 
 `Super+P` runs `~/.config/hypr/scripts/power-menu.sh`; pseudo-tiling moves to

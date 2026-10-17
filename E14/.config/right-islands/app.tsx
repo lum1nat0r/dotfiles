@@ -5,6 +5,7 @@ import { execAsync, subprocess } from "ags/process";
 import { createState, createBinding, For, onCleanup } from "ags";
 import GLib from "gi://GLib";
 import css from "./style.css";
+import { createFluidReveal } from "../island-shared/fluid-reveal";
 
 const script = `${GLib.get_home_dir()}/.config/right-islands/status.py`;
 const connectionHeight = 18;
@@ -76,9 +77,17 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
     "none" | "stats" | "controls"
   >("none");
 
-  const statsExpanded = activePanel((p) => p === "stats");
-  const controlsExpanded = activePanel((p) => p === "controls");
-  const [shoulderWidth, setShoulderWidth] = createState(0);
+  const [statsJoined, setStatsJoined] = createState(false);
+  const [controlsJoined, setControlsJoined] = createState(false);
+  const statsGeometry = { shoulderWidth: 0 };
+  const controlsGeometry = { shoulderWidth: 0 };
+  type RevealController = {
+    setOpen(open: boolean): void;
+    closeImmediately(): void;
+    dispose(): void;
+  };
+  let statsReveal: RevealController;
+  let controlsReveal: RevealController;
   let closeTimer = 0;
   const cancelClose = () => {
     if (closeTimer) GLib.source_remove(closeTimer);
@@ -89,11 +98,18 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
     // Allow brief pointer excursions without flickering the connected glass shape.
     closeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
       closeTimer = 0;
-      if (activePanel.peek() === panel) setActivePanel("none");
+      if (activePanel.peek() === panel) {
+        setActivePanel("none");
+        (panel === "stats" ? statsReveal : controlsReveal).setOpen(false);
+      }
       return GLib.SOURCE_REMOVE;
     });
   };
-  onCleanup(cancelClose);
+  onCleanup(() => {
+    cancelClose();
+    statsReveal?.dispose();
+    controlsReveal?.dispose();
+  });
   const command = (cmd: string) => {
     try {
       GLib.spawn_command_line_async(cmd);
@@ -248,10 +264,10 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
           </box>
         </box>
   );
-  const connectDetails = (details: Gtk.Widget) => {
+  const connectDetails = (details: Gtk.Widget, geometry: { shoulderWidth: number }) => {
     const canvas = new Gtk.DrawingArea();
     canvas.set_draw_func((_area, cr, width, height) => {
-      const shoulder = shoulderWidth.peek();
+      const shoulder = geometry.shoulderWidth;
       const radius = connectionHeight;
       // One continuous, pixel-centred outline: no clipped stroke at the neck/body seam.
       cr.moveTo(shoulder + 0.5, -1);
@@ -278,8 +294,28 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
     const overlay = new Gtk.Overlay({ child: canvas });
     overlay.add_overlay(content);
     overlay.set_measure_overlay(content, true);
-    return overlay;
+    return { overlay, canvas };
   };
+  const statsConnection = connectDetails(statsDetails, statsGeometry);
+  const controlsConnection = connectDetails(controlsDetails, controlsGeometry);
+  const statsContent = (
+    <box>
+      <Gtk.EventControllerMotion
+        onEnter={() => openPanel("stats")}
+        onLeave={() => scheduleClose("stats")}
+      />
+      {statsConnection.overlay}
+    </box>
+  ) as Gtk.Widget;
+  const controlsContent = (
+    <box>
+      <Gtk.EventControllerMotion
+        onEnter={() => openPanel("controls")}
+        onLeave={() => scheduleClose("controls")}
+      />
+      {controlsConnection.overlay}
+    </box>
+  ) as Gtk.Widget;
   const common = {
     gdkmonitor: monitor,
     anchor: Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT,
@@ -293,6 +329,7 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
   let statsWindow: Astal.Window;
   let controlsWindow: Astal.Window;
   let summary: Gtk.Box;
+  let statsSummary: Gtk.Box;
   let controlsSummary: Gtk.Box;
   const openPanel = (panel: "stats" | "controls") => {
     cancelClose();
@@ -302,19 +339,27 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
     window.margin_right = common.marginRight +
       (panel === "stats" ? controlsSummary.get_width() + 12 : 0);
     const details = panel === "stats" ? statsDetails : controlsDetails;
-    const islandWidth = panel === "stats"
-      ? summary.get_width() - controlsSummary.get_width() - 12
-      : controlsSummary.get_width();
+    const selectedSummary = panel === "stats" ? statsSummary : controlsSummary;
+    const islandWidth = selectedSummary.get_width();
+    const geometry = panel === "stats" ? statsGeometry : controlsGeometry;
+    const connection = panel === "stats" ? statsConnection : controlsConnection;
     // Leave room for both the outer corner and the concave neck on the left shoulder.
     const [, detailWidth] = details.measure(Gtk.Orientation.HORIZONTAL, -1);
-    setShoulderWidth(Math.max(0, detailWidth - islandWidth));
+    const shoulderWidth = Math.max(0, detailWidth - islandWidth);
+    if (geometry.shoulderWidth !== shoulderWidth) {
+      geometry.shoulderWidth = shoulderWidth;
+      connection.canvas.queue_draw();
+    }
     setActivePanel(panel);
+    statsReveal.setOpen(panel === "stats");
+    controlsReveal.setOpen(panel === "controls");
   };
   return (
     <>
       <window {...common} name="right-summary" visible>
         <box class="panel-row" spacing={12} $={(self) => { summary = self; }}>
-          <box class={statsExpanded((expanded) => `glass compact${expanded ? " joined" : ""}`)} spacing={13}>
+          <box $={(self) => { statsSummary = self; }}>
+          <box class={statsJoined((joined) => `glass compact${joined ? " joined" : ""}`)} spacing={13}>
             <Gtk.EventControllerMotion
               onEnter={() => openPanel("stats")}
               onLeave={() => scheduleClose("stats")}
@@ -324,9 +369,10 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
             <label widthChars={6} label={info((d) => d.temp === null ? " --" : ` ${d.temp}°`)} />
             <label widthChars={6} visible={info((d) => d.battery !== null)} label={info((d) => `󰁹 ${d.battery ?? 0}%`)} />
           </box>
+          </box>
           {/* Measure the unstyled wrapper, including the island's CSS padding and border. */}
           <box $={(self) => { controlsSummary = self; }}>
-          <box class={controlsExpanded((expanded) => `glass compact${expanded ? " joined" : ""}`)} spacing={15}>
+          <box class={controlsJoined((joined) => `glass compact${joined ? " joined" : ""}`)} spacing={15}>
             <Gtk.EventControllerMotion
               onEnter={() => openPanel("controls")}
               onLeave={() => scheduleClose("controls")}
@@ -340,26 +386,30 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
           </box>
         </box>
       </window>
-      <window {...common} name="right-stats" visible={statsExpanded}
-        $={(self) => { statsWindow = self; }}>
-        <box>
-          <Gtk.EventControllerMotion
-            onEnter={cancelClose}
-            onLeave={() => scheduleClose("stats")}
-          />
-          {connectDetails(statsDetails)}
-        </box>
-      </window>
-      <window {...common} name="right-controls" visible={controlsExpanded}
-        $={(self) => { controlsWindow = self; }}>
-        <box>
-          <Gtk.EventControllerMotion
-            onEnter={cancelClose}
-            onLeave={() => scheduleClose("controls")}
-          />
-          {connectDetails(controlsDetails)}
-        </box>
-      </window>
+      <window {...common} name="right-stats" visible={false}
+        $={(self) => {
+          statsWindow = self;
+          statsReveal = createFluidReveal({
+            window: self,
+            child: statsContent,
+            driver: statsSummary,
+            getOriginX: (width) => width - statsSummary.get_width() / 2,
+            onJoinedChanged: setStatsJoined,
+          });
+        }}
+      />
+      <window {...common} name="right-controls" visible={false}
+        $={(self) => {
+          controlsWindow = self;
+          controlsReveal = createFluidReveal({
+            window: self,
+            child: controlsContent,
+            driver: controlsSummary,
+            getOriginX: (width) => width - controlsSummary.get_width() / 2,
+            onJoinedChanged: setControlsJoined,
+          });
+        }}
+      />
     </>
   );
 }

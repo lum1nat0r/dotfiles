@@ -1,9 +1,10 @@
 import app from "ags/gtk4/app"
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
-import { createState, createComputed, createBinding, For, onCleanup } from "ags"
+import { createState, createEffect, createBinding, For, onCleanup } from "ags"
 import GLib from "gi://GLib"
 import css from "./style.css"
+import { createFluidReveal } from "../island-shared/fluid-reveal"
 
 const empty = { visible: false, playing: false, title: "", artist: "", cover: "", duration: 0, position: 0 }
 const script = `${GLib.get_home_dir()}/.config/music-island/metadata.py`
@@ -18,11 +19,15 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
   const time = createPoll("--:--", 1000, "date +%H:%M")
   const weekday = createPoll("", 30000, "date +%A")
   const date = createPoll("", 30000, "date '+%d. %B'")
-  const [expanded, setExpanded] = createState(false)
+  const [playerJoined, setPlayerJoined] = createState(false)
   const clockOnlyVisible = data(d => !d.visible)
   const compactVisible = data(d => d.visible)
-  const expandedVisible = createComputed([data, expanded], (d, e) => d.visible && e)
   let closeTimer = 0
+  let playerReveal: {
+    setOpen(open: boolean): void
+    closeImmediately(): void
+    dispose(): void
+  } | undefined
   const cancelClose = () => {
     if (closeTimer) GLib.source_remove(closeTimer)
     closeTimer = 0
@@ -31,11 +36,14 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
     cancelClose()
     closeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
       closeTimer = 0
-      setExpanded(false)
+      playerReveal?.setOpen(false)
       return GLib.SOURCE_REMOVE
     })
   }
-  onCleanup(cancelClose)
+  onCleanup(() => {
+    cancelClose()
+    playerReveal?.dispose()
+  })
   let summary: Gtk.Box
   let musicSummary: Gtk.Box
   let playerWindow: Astal.Window
@@ -44,8 +52,14 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
     // The permanent row alone determines the anchor; the player never recentres the clock.
     playerWindow.margin_left = Math.round((monitor.get_geometry().width - summary.get_width()) / 2)
     playerWindow.margin_top = 9 + musicSummary.get_height()
-    setExpanded(true)
+    playerReveal?.setOpen(true)
   }
+  createEffect(() => {
+    if (!data().visible) {
+      cancelClose()
+      playerReveal?.closeImmediately()
+    }
+  })
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`
   const control = (command: string) => {
     try { GLib.spawn_command_line_async(`playerctl -p spotify ${command}`) } catch (e) { console.error(e) }
@@ -67,6 +81,26 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
       <label label={data(d => d.playing ? "󰏤" : "󰐊")} class="compact-control" />
     </box>
   )
+  const playerCard = (
+          <box widthRequest={musicWidth} orientation={Gtk.Orientation.VERTICAL} class="music-shell player-shell">
+            <Gtk.EventControllerMotion onEnter={openPlayer} onLeave={scheduleClose} />
+            <box orientation={Gtk.Orientation.VERTICAL} class="player" spacing={9}>
+              <image file={data(d => d.cover || "/nonexistent/music-island-cover")} pixelSize={220} class="album-art" />
+              <label label={data(d => d.title)} ellipsize={3} maxWidthChars={24} class="track-title" />
+              <label label={data(d => d.artist)} ellipsize={3} maxWidthChars={24} class="track-artist" />
+              <levelbar value={data(d => d.duration ? Math.min(1, d.position / d.duration) : 0)} class="progress" />
+              <box class="times">
+                <label label={data(d => fmt(d.position))} hexpand />
+                <label label={data(d => fmt(d.duration))} />
+              </box>
+              <box class="player-controls" halign={Gtk.Align.CENTER} spacing={22}>
+                <button label="󰒮" onClicked={() => control("previous")} />
+                <button label={data(d => d.playing ? "󰏤" : "󰐊")} onClicked={() => control("play-pause")} class="primary" />
+                <button label="󰒭" onClicked={() => control("next")} />
+              </box>
+            </box>
+          </box>
+  ) as Gtk.Widget
   const common = {
     gdkmonitor: monitor,
     anchor: Astal.WindowAnchor.TOP,
@@ -85,7 +119,7 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
         <box class="center-row" spacing={12} $={self => { summary = self }}>
           <box valign={Gtk.Align.START} $={self => { musicSummary = self }}>
           <box widthRequest={musicWidth}
-            class={expanded(e => `music-shell${e ? " joined" : ""}`)}>
+            class={playerJoined(joined => `music-shell${joined ? " joined" : ""}`)}>
             <Gtk.EventControllerMotion onEnter={openPlayer} onLeave={scheduleClose} />
             {header}
           </box>
@@ -100,27 +134,18 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
           </box>
         </box>
       </window>
-      <window {...common} name="center-islands-expanded" visible={expandedVisible}
+      <window {...common} name="center-islands-expanded" visible={false}
         anchor={Astal.WindowAnchor.TOP | Astal.WindowAnchor.LEFT}
-        $={self => { playerWindow = self }}>
-          <box widthRequest={musicWidth} orientation={Gtk.Orientation.VERTICAL} class="music-shell player-shell">
-            <Gtk.EventControllerMotion onEnter={cancelClose} onLeave={scheduleClose} />
-            <box orientation={Gtk.Orientation.VERTICAL} class="player" spacing={9}>
-              <image file={data(d => d.cover || "/nonexistent/music-island-cover")} pixelSize={220} class="album-art" />
-              <label label={data(d => d.title)} ellipsize={3} maxWidthChars={24} class="track-title" />
-              <label label={data(d => d.artist)} ellipsize={3} maxWidthChars={24} class="track-artist" />
-              <levelbar value={data(d => d.duration ? Math.min(1, d.position / d.duration) : 0)} class="progress" />
-              <box class="times">
-                <label label={data(d => fmt(d.position))} hexpand />
-                <label label={data(d => fmt(d.duration))} />
-              </box>
-              <box class="player-controls" halign={Gtk.Align.CENTER} spacing={22}>
-                <button label="󰒮" onClicked={() => control("previous")} />
-                <button label={data(d => d.playing ? "󰏤" : "󰐊")} onClicked={() => control("play-pause")} class="primary" />
-                <button label="󰒭" onClicked={() => control("next")} />
-              </box>
-            </box>
-          </box>
+        $={self => {
+          playerWindow = self
+          playerReveal = createFluidReveal({
+            window: self,
+            child: playerCard,
+            driver: musicSummary,
+            getOriginX: () => musicSummary.get_width() / 2,
+            onJoinedChanged: setPlayerJoined,
+          })
+        }}>
       </window>
     </>
   )
