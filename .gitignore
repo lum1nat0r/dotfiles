@@ -15,7 +15,9 @@
 !/E14/.config/hypr/scripts/power-menu.sh
 !/E14/.config/hypr/scripts/power-menu.py
 !/E14/.config/kiorc
+!/E14/.config/mimeapps.list
 !/E14/.config/island-shared/fluid-reveal.ts
+!/E14/.config/island-shared/style.css
 !/E14/.config/music-island/app.tsx
 !/E14/.config/music-island/metadata.py
 !/E14/.config/music-island/style.css

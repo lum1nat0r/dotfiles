@@ -1,0 +1,2 @@
+/* Shared surface color for Waybar, both AGS islands and their hover panels. */
+@define-color island_bg rgba(20, 25, 40, 0.45);

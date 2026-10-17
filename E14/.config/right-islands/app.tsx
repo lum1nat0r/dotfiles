@@ -4,7 +4,6 @@ import { createPoll } from "ags/time";
 import { execAsync, subprocess } from "ags/process";
 import { createState, createBinding, For, onCleanup } from "ags";
 import GLib from "gi://GLib";
-import css from "./style.css";
 import { createFluidReveal } from "../island-shared/fluid-reveal";
 
 const script = `${GLib.get_home_dir()}/.config/right-islands/status.py`;
@@ -280,7 +279,8 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
       cr.lineTo(width - radius, height - 0.5);
       cr.arcNegative(width - radius, height - radius, radius - 0.5, Math.PI / 2, 0);
       cr.lineTo(width - 0.5, -1);
-      cr.setSourceRGBA(20 / 255, 25 / 255, 40 / 255, 0.45);
+      const [, color] = _area.get_style_context().lookup_color("island_bg");
+      cr.setSourceRGBA(color.red, color.green, color.blue, color.alpha);
       cr.fillPreserve();
       cr.setSourceRGBA(1, 1, 1, 0.25);
       cr.setLineWidth(1);
@@ -415,7 +415,7 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
 }
 app.start({
   instanceName: "right-islands",
-  css,
+  css: `${GLib.get_home_dir()}/.config/right-islands/style.css`,
   main() {
     return <For each={createBinding(app, "monitors")}>
       {/* One window set per monitor; For handles monitor additions/removals. */}

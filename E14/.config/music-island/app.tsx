@@ -3,7 +3,6 @@ import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
 import { createState, createEffect, createBinding, For, onCleanup } from "ags"
 import GLib from "gi://GLib"
-import css from "./style.css"
 import { createFluidReveal } from "../island-shared/fluid-reveal"
 
 const empty = { visible: false, playing: false, title: "", artist: "", cover: "", duration: 0, position: 0 }
@@ -153,7 +152,7 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
 
 app.start({
   instanceName: "music-island",
-  css,
+  css: `${GLib.get_home_dir()}/.config/music-island/style.css`,
   main() {
     return <For each={createBinding(app, "monitors")}>
       {/* One window set per monitor; For handles monitor additions/removals. */}

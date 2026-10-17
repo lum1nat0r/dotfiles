@@ -91,6 +91,36 @@ This does not delete the repository files, remove unrelated local files, or
 automatically restore the original backup. Restore originals only after checking
 for newer local changes.
 
+## Image viewer
+
+Gwenview is the image viewer, with Qt/KDE format plugins for WebP, TIFF, AVIF,
+JPEG XL and other formats:
+
+```sh
+sudo pacman -S --needed gwenview kimageformats qt6-imageformats
+```
+
+`E14/.config/mimeapps.list` makes Gwenview the default for common image formats.
+PDF and directory associations are not overridden. Gwenview's own settings,
+recent-file history and caches remain local; only the reviewed MIME defaults
+are managed by Stow.
+
+MuPDF supports PDF and images including PNG, JPEG, GIF and TIFF, but its
+document-oriented interface is not a replacement for Gwenview's folder browsing,
+thumbnails and image-editing tools. MuPDF is not installed by this setup.
+HEIF/HEIC is not configured; KDE's HEIF support needs the optional `libheif` codec.
+
+Deployment was smoke-checked by opening a generated PNG through `xdg-open` and
+visually checking its rendering in Gwenview. MIME queries confirmed image
+defaults and the unchanged PDF handler. Gitleaks found no secrets in the new
+configuration. An existing Python `__pycache__` conflict required excluding
+runtime bytecode during restow, without changing either copy:
+
+```sh
+stow --simulate --verbose --restow --ignore='__pycache__' E14
+stow --restow --ignore='__pycache__' E14
+```
+
 ## Zsh and Oh My Zsh
 
 Zsh is installed with Arch's `zsh` package. Oh My Zsh is a shared, root-owned
@@ -128,7 +158,7 @@ The package contains explicitly reviewed configuration files:
 - Bash interactive settings/login sourcing and Zsh/Oh My Zsh preferences.
 - Hyprland Lua configuration, Hyprlock/Hypridle configuration and the Wofi launcher.
 - Waybar, SwayNC and Wofi configuration/styles and the notification helper.
-- The music-island and right-islands widget sources/styles/helpers.
+- The music-island and right-islands widget sources/styles/helpers and shared island palette.
 - VS Code's CSS/JSONC formatter selections, KIO delete confirmation and
   pavucontrol preferences.
 - OMP's global sticky rule for the dotfiles workflow.
@@ -151,6 +181,61 @@ The following remain local and are not deployed or changed by Stow:
 Widget artwork/telemetry caches remain outside the package. Runtime SSIDs,
 media metadata, clipboard contents and notifications must not be saved into
 repository files.
+
+## MX Master 3S workspace gestures
+
+`logiops/logid.cfg` maps the thumb-rest gesture button (`0xc3`) to horizontal
+workspace steps while held. Native `OnInterval` gestures emit `KEY_F13`/`KEY_F14`
+repeatedly as the mouse moves, not on release or on a timer. Both directions use
+`interval: 800`, calibrated with the physical mouse. With `threshold: 1`, the
+first step occurs after approximately 801 movement units, then every 800.
+Reversing direction requires moving back across the original button-down
+position; it is not relative to the most recent turn.
+
+The active Hyprland config binds XKB keycodes `191`/`192` (Linux F13/F14 plus 8),
+because the default evdev keymap names these keys `XF86Tools`/`XF86Launch5`.
+The callbacks select the nearest existing normal workspace by internal ID on
+the focused monitor. Empty and named workspaces are eligible; special workspaces
+and other monitors are excluded. At either end, nothing happens: no wrapping or
+workspace creation. Touchpad gestures and Super+wheel bindings are unchanged.
+Click-only, small and vertical gestures do nothing; other mouse controls are
+not configured.
+
+Install from the repository root after reviewing the AUR build recipe:
+
+```sh
+yay -S logiops
+lua tests/mx-master-workspaces.lua
+gitleaks dir --redact --no-banner logiops/logid.cfg
+hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua"
+```
+
+Before deployment, inspect any existing `/etc/logid.cfg` and preserve unrelated
+settings in a private backup. Merge only the gesture mapping if other devices
+or settings are already configured. For a new installation:
+
+```sh
+sudo install -o root -g root -m 0644 logiops/logid.cfg /etc/logid.cfg
+hyprctl reload config-only
+hyprctl configerrors
+sudo systemctl enable --now logid.service
+systemctl is-active logid.service
+sudo journalctl -u logid.service -b --no-pager -n 80
+```
+
+After subsequent config edits, copy again and use `sudo systemctl restart
+logid.service`; the daemon has no reload action. `/etc/logid.cfg` must remain a
+root-owned regular copy, never a symlink into this user-writable repository.
+This top-level directory is not a Stow package; the E14 allowlist is unchanged.
+Editing the already linked Hyprland file does not require restowing.
+
+LogiOps 0.3.5 can detect the Bolt receiver but time out initializing the mouse
+([upstream #446](https://github.com/PixlOne/logiops/issues/446)). This occurred
+during setup: switching the mouse off/on with the daemon already running
+produced `Device found: MX Master 3S`. If gestures stop after a service start,
+check the journal for actual mouse detection, not merely an active service or
+receiver detection. Do not run another Logitech controller alongside LogiOps.
+Device identities and diagnostic logs remain outside the repository.
 
 ## Power-aware idle lock
 
@@ -296,6 +381,28 @@ therefore load the wrong widget. Keep this ordering when changing autostart.
 If music-island fails before registering on D-Bus, right-islands waits for it.
 GTK box spacing belongs in the TSX `spacing` property, not in GTK CSS.
 
+The center music and clock compact surfaces have a 44px outer height, matching
+Waybar and right-islands at a 9px top offset. The player anchors below the measured
+music header, so reducing the header does not change its width, content or animation.
+Live `hyprctl layers` checks confirmed 44px compact layers on eDP-1 and DP-1;
+screenshots confirmed unclipped music/clock labels and the joined hover player.
+
+Both island launches set
+`GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1` for that process only.
+GTK 4.24.1 creates a background-effect object even without a requested blur region;
+Hyprland 0.56.2 gives this empty client region precedence over its layer blur rules.
+Disabling that protocol lets the existing `music-island` and `right-islands`
+layer rules blur the translucent pixels, including the Cairo-drawn stats/control
+cards and their animated contours. CSS opacity and the GTK renderer stay unchanged;
+other GTK applications are unaffected. Use the same environment prefix for manual
+`ags run` launches; a Hyprland reload alone does not restart existing islands.
+See [GTK's surface setup](https://github.com/GNOME/gtk/blob/4.24.1/gdk/wayland/gdksurface-wayland.c)
+and [Hyprland's `shouldBlur` precedence](https://github.com/hyprwm/Hyprland/blob/v0.56.2/src/render/Renderer.cpp).
+Verification: both real island processes ran with the scoped override, neither
+bound the background-effect protocol, and music, stats and control hover cards
+were opened and visually checked over application content. No GTK warnings/errors
+were observed; Hyprland config verification and Gitleaks scanning passed.
+
 The migration exercised real Stow deploy/restow/unstow and conflict handling in
 an isolated target, verified all 21 live file links and preserved script modes,
 checked Bash/Lua/Python/JSON syntax, parsed the deployed configuration with
@@ -303,6 +410,61 @@ checked Bash/Lua/Python/JSON syntax, parsed the deployed configuration with
 The hook was checked with clean data, a synthetic staged token and a missing
 scanner. No compositor reload, lock/authentication attempt or application
 restart was needed for the file-link migration.
+
+### Shared island background
+
+Change **only `@define-color island_bg`** in
+`E14/.config/island-shared/style.css` (also linked at
+`~/.config/island-shared/style.css`) to set the surface color and opacity:
+
+```css
+@define-color island_bg rgba(20, 25, 40, 0.45);
+```
+
+Waybar (including its tooltips), the music/clock islands, the right-hand compact
+islands and all three hover cards use this named color. Each stylesheet imports
+the shared file. AGS loads its stylesheet by path so GTK resolves relative imports;
+the Cairo stats/control contours read the same color with `lookup_color`.
+Borders, animation geometry and internal button/meter highlights remain separate.
+The `waybar`, `music-island` and `right-islands` layer rules use `xray = true`
+in `E14/.config/hypr/hyprland.lua`. All compact/expanded surfaces sample the
+blurred wallpaper rather than application windows, preventing a bright window
+from producing a different tint below a dark compact header. Wallpaper colors
+can still show through; use alpha `1` in `island_bg` for a completely flat color.
+This is scoped to these three namespaces, not a global change to window blur.
+After changing only these compositor rules, `hyprctl reload config-only` is enough.
+Verification opened music, stats and controls over a running browser: the browser
+toolbar/content no longer tinted the panels. Config verification and Gitleaks passed.
+
+After editing the palette, reload Waybar first:
+
+```sh
+pkill -USR2 -x waybar
+```
+
+Wait for Waybar to reappear, then restart the islands in order:
+
+```sh
+ags quit -i right-islands
+ags quit -i music-island
+env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 \
+    ags run "$HOME/.config/music-island/app.tsx" &
+gdbus wait --session io.Astal.music-island
+env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 \
+    ags run "$HOME/.config/right-islands/app.tsx" &
+```
+
+Restarting the islands after Waybar also puts their hover targets above Waybar's
+full-width layer. Keep the scoped protocol override for the blur behavior described
+above. No restow is needed for subsequent palette edits.
+
+Verification loaded all three deployed stylesheets with their actual GTK3/GTK4
+parsers and checked the resolved RGBA values, then reloaded Waybar and sequentially
+started both real AGS applications. Desktop captures showed the expanded music,
+stats and control surfaces, including the rounded Cairo necks; both application
+logs were empty. The new palette passed Gitleaks and manual personal-data review.
+Stow simulation/restow used `--ignore='__pycache__'` for the existing local bytecode
+conflict; caches, logs and desktop captures remain outside the repository.
 
 ### Center-out hover lighting
 

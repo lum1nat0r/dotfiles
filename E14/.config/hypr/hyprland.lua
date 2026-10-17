@@ -82,14 +82,15 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
     -- Liquid Glass Islands
+    -- GTK 4.24's empty client blur region overrides layer rules, including Cairo hover cards.
     hl.exec_cmd(
-        "ags run " .. os.getenv("HOME") ..
+        "env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 ags run " .. os.getenv("HOME") ..
         "/.config/music-island/app.tsx"
     )
 
     -- AGS 3.1 shares $XDG_RUNTIME_DIR/ags.js; wait until the first app has loaded it.
     hl.exec_cmd(
-        "gdbus wait --session io.Astal.music-island && ags run " .. os.getenv("HOME") ..
+        "gdbus wait --session io.Astal.music-island && env GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1 ags run " .. os.getenv("HOME") ..
         "/.config/right-islands/app.tsx"
     )
 end)
@@ -228,13 +229,16 @@ hl.layer_rule({
     name = "launcher-glass",
     match = { namespace = "wofi|power-menu" },
     blur = true,
+    xray = false,
     ignore_alpha = 0,
 })
 
+-- Sample the wallpaper, not application windows, across compact and expanded islands.
 hl.layer_rule({
     name = "waybar-glass",
     match = { namespace = "waybar" },
     blur = true,
+    xray = false,
     ignore_alpha = 0,
 })
 
@@ -242,6 +246,7 @@ hl.layer_rule({
     name = "music-island-glass",
     match = { namespace = "music-island" },
     blur = true,
+    xray = false,
     ignore_alpha = 0,
 })
 
@@ -249,6 +254,7 @@ hl.layer_rule({
     name = "right-islands-glass",
     match = { namespace = "right-islands" },
     blur = true,
+    xray = false,
     ignore_alpha = 0,
 })
 
@@ -257,12 +263,14 @@ hl.layer_rule({
     name = "notifications-glass",
     match = { namespace = "swaync-notification-window" },
     blur = true,
+    xray = false,
     ignore_alpha = 0,
 })
 hl.layer_rule({
     name = "notification-center-glass",
     match = { namespace = "swaync-control-center" },
     blur = true,
+    xray = false,
     ignore_alpha = 0,
 })
 
@@ -398,6 +406,36 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:mag
 -- Scroll through existing workspaces with mainMod + scroll
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+-- MX Master gestures: existing neighbors on this monitor, without wrapping.
+local function focusAdjacentWorkspace(direction)
+    local current = hl.get_active_workspace()
+    if not current then return end
+
+    local monitor = current.monitor
+    if not monitor then return end
+
+    local target
+    for _, workspace in ipairs(hl.get_workspaces()) do
+        local workspaceMonitor = workspace.monitor
+        if not workspace.special
+            and workspaceMonitor
+            and workspaceMonitor.id == monitor.id
+            and (workspace.id - current.id) * direction > 0
+            and (not target
+                or (workspace.id - target.id) * direction < 0) then
+            target = workspace
+        end
+    end
+
+    if target then
+        hl.dispatch(hl.dsp.focus({ workspace = target.config_name }))
+    end
+end
+
+-- KEY_F13/F14 + XKB's 8 offset; evdev symbols rename these to media keys.
+hl.bind("code:191", function() focusAdjacentWorkspace(-1) end)
+hl.bind("code:192", function() focusAdjacentWorkspace(1) end)
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })

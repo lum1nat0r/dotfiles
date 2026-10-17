@@ -1,12 +1,14 @@
+@import "../island-shared/style.css";
+
 * { font-family: "JetBrainsMono Nerd Font", sans-serif; color: #eff5ff; }
 window.music-window, .center-row { background: transparent; }
 .music-shell, .clock-shell {
-    background: rgba(20,25,40,0.45);
+    background: @island_bg;
     border: 1px solid rgba(255,255,255,0.25);
     border-radius: 18px;
 }
-/* Match the clock's 52px outer height, both with and without the hover player. */
-.music-compact { min-height: 50px; padding: 0 17px; }
+/* Match the other islands' 44px outer height, including while the player is open. */
+.music-compact { min-height: 42px; padding: 0 17px; }
 /* The fixed-width header stays in the permanent row; only the lower player is mapped. */
 .music-shell.joined {
     border-bottom-width: 0;
@@ -20,7 +22,7 @@ window.music-window, .center-row { background: transparent; }
     border-top-right-radius: 0;
 }
 .clock-shell {
-    min-height: 42px;
+    min-height: 34px;
     padding: 4px 16px;
 }
 .clock-time {

@@ -1,3 +1,5 @@
+@import "../island-shared/style.css";
+
 * {
   font-family: "JetBrainsMono Nerd Font", "Symbols Nerd Font", sans-serif;
   font-size: 12px;
@@ -11,7 +13,7 @@ window#waybar {
   color: #eff5ff;
 }
 tooltip {
-  background: rgba(22, 30, 48, 0.95);
+  background: @island_bg;
   border: 1px solid rgba(225, 235, 255, 0.28);
   border-radius: 12px;
 }
@@ -22,7 +24,7 @@ tooltip label {
 #island,
 #stats,
 #controls {
-  background: rgba(20, 25, 40, 0.45);
+  background: @island_bg;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 17px;
   padding: 0 8px;
@@ -36,7 +38,7 @@ tooltip label {
    ───────────────────────────── */
 
 #workspaces {
-    background: rgba(20, 25, 40, 0.45);
+    background: @island_bg;
     border: 1px solid rgba(255, 255, 255, 0.24);
     border-radius: 17px;
     padding: 3px 5px;
