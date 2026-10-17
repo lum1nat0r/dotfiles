@@ -35,7 +35,6 @@ window.music-window, .center-row { background: transparent; }
     margin-top: 5px;
     margin-bottom: 5px;
 }
-.clock-details { spacing: 1px; }
 .clock-weekday { font-size: 11px; font-weight: 600; color: #f0f5ff; }
 .clock-date { font-size: 10px; color: #b7c8de; }
 

@@ -91,11 +91,41 @@ This does not delete the repository files, remove unrelated local files, or
 automatically restore the original backup. Restore originals only after checking
 for newer local changes.
 
+## Zsh and Oh My Zsh
+
+Zsh is installed with Arch's `zsh` package. Oh My Zsh is a shared, root-owned
+checkout of <https://github.com/ohmyzsh/ohmyzsh> at
+`/usr/local/share/oh-my-zsh`; it is not vendored into this repository.
+Install that checkout before starting a shell with the managed `.zshrc`.
+
+`E14/.zshrc` selects the `robbyrussell` theme and `git` plugin, preserves
+`~/.local/bin` on `PATH`, and keeps caches under each user's cache directory.
+Shell history and completion dumps remain local. Automatic framework updates
+are disabled because ordinary users cannot modify the shared installation;
+update it explicitly with:
+
+```sh
+sudo git -C /usr/local/share/oh-my-zsh pull --ff-only
+```
+
+The system setup sets `/usr/bin/zsh` as the login shell for the desktop user
+and root, and as the `useradd --defaults --shell /usr/bin/zsh` default for new
+accounts. `/etc/skel/.zshrc` and `/root/.zshrc` contain copies of the initial
+configuration; Stow manages only the desktop user's `~/.zshrc`, so later edits
+do not automatically update those system copies. Service accounts and
+`/bin/sh` are unchanged.
+
+Log out and back in to refresh the desktop's inherited `SHELL`; already running
+shells remain unchanged. Interactive login smoke checks covered the desktop
+user, root and a clean temporary home using `/etc/skel/.zshrc`, including
+Oh My Zsh loading, Git aliases and completion security.
+
+
 ## What belongs in E14
 
 The package contains explicitly reviewed configuration files:
 
-- Bash interactive settings and login sourcing.
+- Bash interactive settings/login sourcing and Zsh/Oh My Zsh preferences.
 - Hyprland Lua configuration, Hyprlock configuration and the Wofi launcher.
 - Waybar, SwayNC and Wofi configuration/styles and the notification helper.
 - The music-island and right-islands widget sources/styles/helpers.
@@ -171,6 +201,13 @@ clipboard/screenshot utilities, portals and the configured polkit agent.
 VS Code formatter settings require `esbenp.prettier-vscode`.
 The styles reference JetBrainsMono Nerd Font, Symbols Nerd Font and
 Lekton Nerd Font Mono.
+
+The island autostart uses GLib's `gdbus wait` to start right-islands only after
+music-island owns `io.Astal.music-island` on the session bus. AGS 3.1 writes every
+`ags run` bundle to the same `$XDG_RUNTIME_DIR/ags.js`; concurrent starts can
+therefore load the wrong widget. Keep this ordering when changing autostart.
+If music-island fails before registering on D-Bus, right-islands waits for it.
+GTK box spacing belongs in the TSX `spacing` property, not in GTK CSS.
 
 The migration exercised real Stow deploy/restow/unstow and conflict handling in
 an isolated target, verified all 21 live file links and preserved script modes,

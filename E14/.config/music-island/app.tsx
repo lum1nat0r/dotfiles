@@ -54,7 +54,7 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
     <box class="clock-shell" spacing={12} valign={Gtk.Align.START}>
       <label label={time} class="clock-time" />
       <box class="clock-divider" />
-      <box orientation={Gtk.Orientation.VERTICAL} valign={Gtk.Align.CENTER} class="clock-details">
+      <box orientation={Gtk.Orientation.VERTICAL} spacing={1} valign={Gtk.Align.CENTER} class="clock-details">
         <label label={weekday} class="clock-weekday" xalign={0} />
         <label label={date} class="clock-date" xalign={0} />
       </box>
@@ -93,7 +93,7 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
           <box class="clock-shell" spacing={12} valign={Gtk.Align.START}>
             <label label={time} class="clock-time" />
             <box class="clock-divider" />
-            <box orientation={Gtk.Orientation.VERTICAL} valign={Gtk.Align.CENTER} class="clock-details">
+            <box orientation={Gtk.Orientation.VERTICAL} spacing={1} valign={Gtk.Align.CENTER} class="clock-details">
               <label label={weekday} class="clock-weekday" xalign={0} />
               <label label={date} class="clock-date" xalign={0} />
             </box>

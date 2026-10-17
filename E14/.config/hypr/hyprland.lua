@@ -84,8 +84,9 @@ hl.on("hyprland.start", function ()
         "/.config/music-island/app.tsx"
     )
 
+    -- AGS 3.1 shares $XDG_RUNTIME_DIR/ags.js; wait until the first app has loaded it.
     hl.exec_cmd(
-        "ags run " .. os.getenv("HOME") ..
+        "gdbus wait --session io.Astal.music-island && ags run " .. os.getenv("HOME") ..
         "/.config/right-islands/app.tsx"
     )
 end)
