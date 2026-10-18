@@ -648,6 +648,38 @@ The hook was checked with clean data, a synthetic staged token and a missing
 scanner. No compositor reload, lock/authentication attempt or application
 restart was needed for the file-link migration.
 
+### Center weather island
+
+The center row in `music-island` contains music (when available), the clock and
+a weather island. Hovering over the weather opens the shared spring reveal with
+today plus the next four days: condition, minimum/maximum temperature in Celsius
+and precipitation probability. With no location, an input is shown. Once configured,
+the location has an edit button that replaces it with a prefilled city input.
+Enter or ✓ saves; Escape cancels editing. Open-Meteo's first matching place is
+used; the full resolved region is shown in the card.
+
+`weather.tsx` shares one weather request across monitors and refreshes every
+15 minutes. `weather.py` uses Python's standard library and the
+[Open-Meteo geocoding](https://open-meteo.com/en/docs/geocoding-api) and
+[forecast](https://open-meteo.com/en/docs) APIs; no API key or new dependency is
+needed. The chosen location and coordinates are stored with mode `0600` in
+`$XDG_CONFIG_HOME/music-island/weather-location.json` (default
+`~/.config/music-island/weather-location.json`). This private runtime file stays
+local, outside Stow and the repository. No automatic geolocation occurs, and
+an unconfigured island makes no network requests. Selecting a city sends its
+name to geocoding; forecast refreshes send its coordinates to Open-Meteo.
+
+On first launch the header says **Ort wählen**. Unknown places preserve the
+previous setting; provider failures show an error instead of invented weather.
+The weather layer requests keyboard focus only after clicking the input:
+mapping an already focusable layer on Hyprland otherwise steals hover from
+the header and repeatedly closes/reopens the preview.
+
+Verification: `python3 -B tests/weather.py`, AGS bundling, a real Open-Meteo
+request, and the deployed GTK surface with a saved city and all five forecast
+rows. The location field and save action were exercised through native
+accessibility, with screenshots of the actual hover surface.
+
 ### Shared island background
 
 Change **only `@define-color island_bg`** in

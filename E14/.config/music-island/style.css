@@ -2,7 +2,7 @@
 
 * { font-family: "JetBrainsMono Nerd Font", sans-serif; color: #eff5ff; }
 window.music-window, .center-row { background: transparent; }
-.music-shell, .clock-shell {
+.music-shell, .clock-shell, .weather-shell {
     background: @island_bg;
     border: 1px solid rgba(255,255,255,0.25);
     border-radius: 18px;
@@ -10,7 +10,7 @@ window.music-window, .center-row { background: transparent; }
 /* Match the other islands' 44px outer height, including while the player is open. */
 .music-compact { min-height: 42px; padding: 0 17px; }
 /* The fixed-width header stays in the permanent row; only the lower player is mapped. */
-.music-shell.joined {
+.music-shell.joined, .weather-shell.joined {
     border-bottom-width: 0;
     padding-bottom: 1px;
     border-bottom-left-radius: 0;
@@ -63,3 +63,36 @@ window.music-window, .center-row { background: transparent; }
 }
 .player-controls button.primary { background-color: rgba(175,205,255,0.26); }
 .player-controls button:hover { background-size: 180% 180%; }
+
+.weather-summary {
+    min-height: 42px;
+    padding: 0 14px;
+    background-image: none;
+    box-shadow: none;
+}
+.weather-summary.joined { padding-bottom: 1px; }
+.weather-icon { color: #b5d7ff; font-size: 24px; }
+.weather-temperature { font-size: 17px; font-weight: 700; }
+.weather-location { font-size: 11px; }
+.weather-card {
+    border-top-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding: 12px;
+    font-size: 11px;
+}
+.weather-heading { font-size: 12px; font-weight: 700; }
+.weather-muted { color: #b7c8de; font-size: 10px; }
+.weather-source { font-size: 9px; }
+.weather-error { color: #ffb7b7; font-size: 10px; }
+.forecast-icon { color: #b5d7ff; font-size: 18px; }
+.weather-card entry, .weather-save {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 11px;
+    box-shadow: none;
+}
+.weather-save:hover { background: rgba(175,205,255,0.26); }

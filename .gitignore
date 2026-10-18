@@ -33,6 +33,8 @@
 !/E14/.config/music-island/app.tsx
 !/E14/.config/music-island/metadata.py
 !/E14/.config/music-island/style.css
+!/E14/.config/music-island/weather.tsx
+!/E14/.config/music-island/weather.py
 !/E14/.config/pavucontrol.ini
 !/E14/.config/right-islands/app.tsx
 !/E14/.config/right-islands/status.py

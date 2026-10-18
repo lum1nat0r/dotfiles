@@ -4,13 +4,14 @@ import { createPoll } from "ags/time"
 import { createState, createEffect, createBinding, For, onCleanup } from "ags"
 import GLib from "gi://GLib"
 import { createFluidReveal } from "../island-shared/fluid-reveal"
+import { createWeather, WeatherIsland, type WeatherStore } from "./weather"
 
 const empty = { visible: false, playing: false, title: "", artist: "", cover: "", duration: 0, position: 0 }
 const script = `${GLib.get_home_dir()}/.config/music-island/metadata.py`
 // The summary and lower player share one width; hovering never changes the centred row.
 const musicWidth = 300
 
-function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
+function CenterIslands({ monitor, weather }: { monitor: Gdk.Monitor; weather: WeatherStore }) {
   const state = createPoll(JSON.stringify(empty), 1500, `python ${script}`)
   const data = state((s: string) => {
     try { return { ...empty, ...JSON.parse(s) } } catch { return empty }
@@ -19,8 +20,6 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
   const weekday = createPoll("", 30000, "date +%A")
   const date = createPoll("", 30000, "date '+%d. %B'")
   const [playerJoined, setPlayerJoined] = createState(false)
-  const clockOnlyVisible = data(d => !d.visible)
-  const compactVisible = data(d => d.visible)
   let closeTimer = 0
   let playerReveal: {
     setOpen(open: boolean): void
@@ -73,6 +72,7 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
       </box>
     </box>
   )
+  const weatherIsland = WeatherIsland({ monitor, weather, getRow: () => summary, application: app })
   const header = (
     <box class="music-compact" spacing={10}>
       <label label="󰓇" class="spotify-icon" />
@@ -111,26 +111,17 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
   }
   return (
     <>
-      <window {...common} name="center-islands-clock-only" visible={clockOnlyVisible}>
-        <box class="center-row">{clock}</box>
-      </window>
-      <window {...common} name="center-islands-compact" visible={compactVisible}>
+      <window {...common} name="center-islands-compact" visible>
         <box class="center-row" spacing={12} $={self => { summary = self }}>
-          <box valign={Gtk.Align.START} $={self => { musicSummary = self }}>
+          <box visible={data(d => d.visible)} valign={Gtk.Align.START} $={self => { musicSummary = self }}>
           <box widthRequest={musicWidth}
             class={playerJoined(joined => `music-shell${joined ? " joined" : ""}`)}>
             <Gtk.EventControllerMotion onEnter={openPlayer} onLeave={scheduleClose} />
             {header}
           </box>
           </box>
-          <box class="clock-shell" spacing={12} valign={Gtk.Align.START}>
-            <label label={time} class="clock-time" />
-            <box class="clock-divider" />
-            <box orientation={Gtk.Orientation.VERTICAL} spacing={1} valign={Gtk.Align.CENTER} class="clock-details">
-              <label label={weekday} class="clock-weekday" xalign={0} />
-              <label label={date} class="clock-date" xalign={0} />
-            </box>
-          </box>
+          {clock}
+          {weatherIsland.summary}
         </box>
       </window>
       <window {...common} name="center-islands-expanded" visible={false}
@@ -146,6 +137,7 @@ function CenterIslands({ monitor }: { monitor: Gdk.Monitor }) {
           })
         }}>
       </window>
+      {weatherIsland.window}
     </>
   )
 }
@@ -154,10 +146,11 @@ app.start({
   instanceName: "music-island",
   css: `${GLib.get_home_dir()}/.config/music-island/style.css`,
   main() {
+    const weather = createWeather()
     return <For each={createBinding(app, "monitors")}>
       {/* One window set per monitor; For handles monitor additions/removals. */}
       {(monitor) => {
-        const windows = [...CenterIslands({ monitor })] as Gtk.Window[]
+        const windows = [...CenterIslands({ monitor, weather })] as Gtk.Window[]
         // For owns the first window; dispose the remaining fragment windows here.
         onCleanup(() => windows.slice(1).forEach(window => window.destroy()))
         return windows[0]
