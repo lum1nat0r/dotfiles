@@ -869,10 +869,22 @@ Gitleaks passed. A real reboot, suspend/resume and a physical charge cycle were
 not exercised.
 
 
+### Application launcher
+
+`Super+Space` runs `~/.config/hypr/scripts/launch-wofi.sh`. A nonblocking
+`flock` on `$XDG_RUNTIME_DIR/wofi-launcher.lock` allows only one launcher menu
+at a time; repeated presses leave the existing menu open. Closing it releases
+the lock automatically, including after a crash. The lock descriptor is closed
+in Wofi so applications it starts cannot retain the lock.
+
+Smoke verification: while the real Wofi menu was open, 20 concurrent launcher
+calls were rejected and Hyprland still reported the original single Wofi layer.
+Closing and reopening produced a new menu; its rendering was checked visually.
+
 ### Native power menu
 
 `Super+P` runs `~/.config/hypr/scripts/power-menu.sh`; pseudo-tiling moves to
-`Super+Shift+P`. `Super+R` keeps the existing Wofi application launcher and style.
+`Super+Shift+P`. `Super+Space` keeps the Wofi application launcher and style.
 The power menu's `power-menu.py` is a short-lived GTK3 surface, not a service.
 It requires Python 3/PyGObject, GTK3 and the GtkLayerShell 0.1 introspection API.
 Its stylesheet remains at `wofi/powermenu.css`; the app launcher does not load it.

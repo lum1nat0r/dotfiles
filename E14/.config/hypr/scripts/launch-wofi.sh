@@ -3,5 +3,6 @@
 # Change to wofi-config directory
 cd ~/.config/wofi
 
-# Launch wofi with the configuration file
-wofi --show drun --allow-images
+# Keep the lock out of applications started by wofi.
+exec flock --nonblock --close "${XDG_RUNTIME_DIR:?}/wofi-launcher.lock" \
+    wofi --show drun --allow-images
