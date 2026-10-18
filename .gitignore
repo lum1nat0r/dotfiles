@@ -5,6 +5,7 @@
 !/E14/.bashrc
 !/E14/.bash_profile
 !/E14/.zshrc
+!/E14/.config/starship.toml
 !/E14/.omp/agent/RULES.md
 !/E14/.config/Code/User/settings.json
 !/E14/.config/hypr/hyprland.lua

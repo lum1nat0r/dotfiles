@@ -128,10 +128,29 @@ checkout of <https://github.com/ohmyzsh/ohmyzsh> at
 `/usr/local/share/oh-my-zsh`; it is not vendored into this repository.
 Install that checkout before starting a shell with the managed `.zshrc`.
 
-`E14/.zshrc` selects the `robbyrussell` theme and `git` plugin, preserves
-`~/.local/bin` on `PATH`, and keeps caches under each user's cache directory.
-Shell history and completion dumps remain local. Automatic framework updates
-are disabled because ordinary users cannot modify the shared installation;
+`E14/.zshrc` keeps the Oh My Zsh `git` plugin and uses Starship instead of an
+Oh My Zsh theme. Install the terminal tools from Arch packages:
+
+```sh
+sudo pacman -S --needed fzf zoxide zsh-autosuggestions zsh-syntax-highlighting starship
+```
+
+The configuration initializes fzf's Zsh key bindings, zoxide and Starship, then
+loads autosuggestions and finally syntax highlighting from `/usr/share/zsh/plugins/`.
+It preserves `~/.local/bin` on `PATH` and keeps framework caches local.
+History, zoxide's directory database and prompt caches are not managed by Stow.
+Existing linked `.zshrc` edits need no restow; open a new kitty window to load them.
+Root's and `/etc/skel`'s copies are unchanged. `E14/.config/starship.toml` preserves
+the user's Gruvbox Powerline layout and is deployed as an individual file symlink.
+The original regular file was backed up outside the repository and compared
+byte-for-byte before migration. The deployed prompt was rendered for success
+and failure statuses; no kitty theme is configured. Interactive PTY smoke checks
+also covered fzf history/file/directory selection, suggestion acceptance,
+syntax highlighting, and zoxide's `z`/`zi` navigation with temporary history
+and directory data.
+
+Automatic framework updates are disabled because ordinary users cannot modify
+the shared installation;
 update it explicitly with:
 
 ```sh
