@@ -16,6 +16,8 @@
 !/E14/.config/hypr/scripts/power-menu.sh
 !/E14/.config/hypr/scripts/power-menu.py
 !/E14/.config/kiorc
+!/E14/.config/kdeglobals
+!/E14/.config/menus/applications.menu
 !/E14/.config/hypr/scripts/start-session.sh
 !/E14/.config/systemd/user/e14-session.target
 !/E14/.config/systemd/user/e14-session-watch.service

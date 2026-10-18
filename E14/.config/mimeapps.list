@@ -1,3 +1,6 @@
+[Added Associations]
+text/markdown=com.microsoft.VSCode.desktop;
+
 [Default Applications]
 image/avif=org.kde.gwenview.desktop;
 image/bmp=org.kde.gwenview.desktop;
@@ -12,3 +15,4 @@ image/vnd.microsoft.icon=org.kde.gwenview.desktop;
 image/webp=org.kde.gwenview.desktop;
 image/x-ico=org.kde.gwenview.desktop;
 image/x-webp=org.kde.gwenview.desktop;
+text/markdown=com.microsoft.VSCode.desktop;

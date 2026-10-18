@@ -121,6 +121,31 @@ stow --simulate --verbose --restow --ignore='__pycache__' E14
 stow --restow --ignore='__pycache__' E14
 ```
 
+## KDE application selection under Hyprland
+
+`E14/.config/menus/applications.menu` provides the freedesktop application menu
+used by KDE's "Open With" dialog. It includes installed applications from the
+standard XDG application directories in a flat list; no Plasma workspace package
+or desktop-environment override is needed. KDE still respects hidden application
+entries. Without a menu definition, the dialog can be empty even when the
+application desktop files are installed.
+
+`E14/.config/kdeglobals` selects the installed Kitty terminal for KDE application
+launches, including Vim's terminal-based desktop entry. Konsole is not required.
+Both files are deployed as individual Stow links; the application index remains
+local in `~/.cache/`.
+
+After deployment, rebuild KDE's index:
+
+```sh
+kbuildsycoca6 --noincremental
+```
+
+Close and reopen any existing "Open With" dialog. The native KDE dialog was
+visually checked before and after deployment: empty before, populated afterwards.
+A KDE `ApplicationLauncherJob` also successfully opened a temporary Markdown file
+in Vim inside Kitty. Gitleaks found no secrets in either new configuration file.
+
 ## Zsh and Oh My Zsh
 
 Zsh is installed with Arch's `zsh` package. Oh My Zsh is a shared, root-owned
