@@ -451,6 +451,14 @@ hl.window_rule({
 })
 
 hl.window_rule({
+    name = "telegram-workspace",
+    match = { class = "^org\\.telegram\\.desktop$" },
+    workspace = "special:magic silent",
+    float = true,
+    no_initial_focus = true,
+})
+
+hl.window_rule({
     name = "firefox-workspace",
     match = { class = "^firefox$" },
     workspace = "2",

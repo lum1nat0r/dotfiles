@@ -330,18 +330,30 @@ The existing failed Dolphin unit from the earlier session disconnect was not res
 | Application | Class | Workspace |
 | --- | --- | --- |
 | Kitty terminal | `kitty` | 1 |
+| Telegram (floating, no initial focus) | `org.telegram.desktop` | `special:magic` (`silent`) |
 | Firefox | `firefox` | 2 |
 | VS Code | `com.microsoft.VSCode` | 3 |
 | OrcaSlicer | `orcaslicer` | 4 |
 | Spotify | `Spotify` | 5 |
 
-Opening a matching window switches to its destination workspace (no `silent`).
+Opening a matching window switches to its destination workspace, except Telegram.
 Application rules do not reassign existing windows to other workspaces on reload;
 the monitor rules below can move whole workspaces. Autostart is unchanged.
 Reload with `hyprctl reload`; no restow is needed for this existing file link.
 Verified on the running compositor with temporary Kitty windows advertising each
 class: all four landed on their assigned workspace and switched focus there.
 The actual Firefox, VS Code and Spotify processes were not restarted.
+
+Telegram opens floating in the existing `magic` scratchpad without showing it or
+taking initial focus. Super + S shows/hides the scratchpad on the current
+workspace; Telegram is no longer assigned to workspace 1. Super + Shift + S
+moves the focused window into the same scratchpad, so the toggle affects any
+other windows placed there too. No fixed size, position or autostart was added.
+Move Telegram with Super + left-drag and resize it with Super + right-drag.
+Verified with the actual Telegram application: it reopened in `special:magic`,
+floating and unpinned, initially hidden. The existing toggle dispatcher showed
+it on DP-1 (visually checked) and hid it again. `hyprctl configerrors` was empty;
+Gitleaks found no secrets in the Hyprland configuration.
 
 ### Monitor assignment and docking
 
