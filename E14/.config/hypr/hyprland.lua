@@ -198,7 +198,7 @@ hl.animation({ leaf = "zoomFactor",    enabled = true,  speed = 7,    bezier = "
 
 hl.layer_rule({
     name = "launcher-glass",
-    match = { namespace = "wofi|power-menu" },
+    match = { namespace = "wofi|power-menu|shortcut-help" },
     blur = true,
     xray = false,
     ignore_alpha = 0,
@@ -331,29 +331,49 @@ hl.device({
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
-hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
-local closeWindowBind = hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal), { description = "Programme: Terminal öffnen" })
+local closeWindowBind = hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Fenster: Aktives Fenster schließen" })
 -- closeWindowBind:set_enabled(false)
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
--- hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + P", hl.dsp.exec_cmd(powerMenu))
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("handy --toggle-transcription"))
-hl.bind(mainMod .. " + SHIFT + O", hl.dsp.exec_cmd("handy --cancel"))
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Sitzung: Bildschirm sperren" })
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager), { description = "Programme: Dateimanager öffnen" })
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"), { description = "Programme: Zwischenablage-Verlauf" })
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu), { description = "Programme: App-Launcher öffnen" })
+hl.bind(mainMod .. " + H", hl.dsp.exec_cmd([[python3 "$HOME/.config/hypr/scripts/shortcut-help.py"]]), { description = "Programme: Dieses Cheat-Sheet öffnen" })
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd(powerMenu), { description = "Sitzung: Power-Menü öffnen" })
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo(), { description = "Fenster: Pseudotiling umschalten" })
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("handy --toggle-transcription"), { description = "Aufnahme: Diktat starten / beenden und einfügen" })
+hl.bind(mainMod .. " + SHIFT + O", hl.dsp.exec_cmd("handy --cancel"), { description = "Aufnahme: Diktat abbrechen" })
+hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), { description = "Fenster: Tiling-Teilungsrichtung umschalten" }) -- dwindle only
+
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized" }), { description = "Fenster: Maximieren (Leiste sichtbar)" })
+hl.bind(mainMod .. " + CTRL + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }), { description = "Fenster: Echtes Vollbild umschalten" })
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Fenster: Floating umschalten" })
+hl.bind(mainMod .. " + TAB", hl.dsp.focus({ workspace = "previous" }), { description = "Workspaces: Zum vorherigen Workspace / zurück" })
+hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client --toggle-panel"), { description = "Sitzung: Benachrichtigungen anzeigen / verbergen" })
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("swaync-client --toggle-dnd"), { description = "Sitzung: Nicht stören umschalten" })
 
 hl.bind("Print", hl.dsp.exec_cmd(
     [[sh -c 'area=$(slurp) || exit; grim -g "$area" - | satty -f - --copy-command wl-copy']]
-))
+), { description = "Aufnahme: Screenshot-Bereich mit Satty markieren" })
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd(
+    [[sh -c 'area=$(slurp) || exit; grim -g "$area" - | wl-copy --type image/png']]
+), { description = "Aufnahme: Screenshot direkt in die Zwischenablage" })
 
 -- Move focus with mainMod + arrow keys
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }), { description = "Fenster: Fenster in Pfeilrichtung fokussieren" })
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }), { description = "Fenster: Fenster in Pfeilrichtung fokussieren" })
+hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }), { description = "Fenster: Fenster in Pfeilrichtung fokussieren" })
+hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }), { description = "Fenster: Fenster in Pfeilrichtung fokussieren" })
+
+hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.swap({ direction = "left" }), { description = "Fenster: Fenster mit Nachbarn tauschen" })
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.swap({ direction = "right" }), { description = "Fenster: Fenster mit Nachbarn tauschen" })
+hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.swap({ direction = "up" }), { description = "Fenster: Fenster mit Nachbarn tauschen" })
+hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.swap({ direction = "down" }), { description = "Fenster: Fenster mit Nachbarn tauschen" })
+
+hl.bind(mainMod .. " + CTRL + left",  hl.dsp.window.resize({ x = -40, y = 0, relative = true }), { repeating = true, description = "Fenster: Größe ±40 px (← / ↑ kleiner)" })
+hl.bind(mainMod .. " + CTRL + right", hl.dsp.window.resize({ x = 40, y = 0, relative = true }),  { repeating = true, description = "Fenster: Größe ±40 px (← / ↑ kleiner)" })
+hl.bind(mainMod .. " + CTRL + up",    hl.dsp.window.resize({ x = 0, y = -40, relative = true }), { repeating = true, description = "Fenster: Größe ±40 px (← / ↑ kleiner)" })
+hl.bind(mainMod .. " + CTRL + down",  hl.dsp.window.resize({ x = 0, y = 40, relative = true }),  { repeating = true, description = "Fenster: Größe ±40 px (← / ↑ kleiner)" })
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
@@ -366,17 +386,26 @@ for i = 1, 10 do
     })
 
     local key = i % 10 -- 10 maps to key 0
-    hl.bind(mainMod .. " + " .. key,             hl.dsp.focus({ workspace = i}))
-    hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }))
+    hl.bind(mainMod .. " + " .. key,             hl.dsp.focus({ workspace = i}), { description = "Workspaces: Workspace wechseln (0 = 10)" })
+    hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }), { description = "Workspaces: Fenster in Workspace verschieben (0 = 10)" })
 end
 
 -- Example special workspace (scratchpad)
-hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"), { description = "Scratchpads: Telegram-Scratchpad anzeigen / verbergen" })
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }), { description = "Scratchpads: Fenster ins Telegram-Scratchpad verschieben" })
+
+hl.bind(mainMod .. " + T", function()
+    if #hl.get_windows({ class = "e14-scratch-terminal", mapped = true }) > 0 then
+        hl.dispatch(hl.dsp.workspace.toggle_special("terminal"))
+    else
+        -- Keep rapid presses (including across reloads) from starting duplicate terminals.
+        hl.exec_cmd([[flock --nonblock --close "$XDG_RUNTIME_DIR/e14-scratch-terminal.lock" kitty --class e14-scratch-terminal]])
+    end
+end, { description = "Scratchpads: Terminal-Scratchpad anzeigen / verbergen" })
 
 -- Scroll through existing workspaces with mainMod + scroll
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), { description = "Maus & Gesten: Nächster vorhandener Workspace" })
+hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }), { description = "Maus & Gesten: Vorheriger vorhandener Workspace" })
 
 -- MX Master gestures: existing neighbors on this monitor, without wrapping.
 local function focusAdjacentWorkspace(direction)
@@ -405,26 +434,26 @@ local function focusAdjacentWorkspace(direction)
 end
 
 -- KEY_F13/F14 + XKB's 8 offset; evdev symbols rename these to media keys.
-hl.bind("code:191", function() focusAdjacentWorkspace(-1) end)
-hl.bind("code:192", function() focusAdjacentWorkspace(1) end)
+hl.bind("code:191", function() focusAdjacentWorkspace(-1) end, { description = "Maus & Gesten: MX-Daumentaste + links → Vorheriger Workspace am Monitor" })
+hl.bind("code:192", function() focusAdjacentWorkspace(1) end, { description = "Maus & Gesten: MX-Daumentaste + rechts → Nächster Workspace am Monitor" })
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
-hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
-hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true, description = "Maus & Gesten: Fenster mit linker Maustaste ziehen" })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Maus & Gesten: Größe mit rechter Maustaste ziehen" })
 
 -- Laptop multimedia keys for volume and LCD brightness
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
-hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown",hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true, description = "Medien: Lautstärke +5 % (max. 100 %)" })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true, description = "Medien: Lautstärke −5 %" })
+hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true, description = "Medien: Audio stummschalten / aktivieren" })
+hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true, description = "Medien: Mikrofon stummschalten / aktivieren" })
+hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true, description = "Medien: Bildschirm heller" })
+hl.bind("XF86MonBrightnessDown",hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true, description = "Medien: Bildschirm dunkler" })
 
 -- Requires playerctl
-hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
+hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true, description = "Medien: Nächster Titel" })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true, description = "Medien: Wiedergabe / Pause" })
+hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true, description = "Medien: Wiedergabe / Pause" })
+hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true, description = "Medien: Vorheriger Titel" })
 
 
 --------------------------------
@@ -439,6 +468,16 @@ hl.window_rule({
     name = "terminal-workspace",
     match = { class = "^kitty$" },
     workspace = "1",
+})
+
+hl.window_rule({
+    name = "scratch-terminal",
+    match = { class = "^e14-scratch-terminal$" },
+    workspace = "special:terminal",
+    float = true,
+    -- Fits both configured outputs when moving the scratchpad between monitors.
+    size = { 1200, 750 },
+    center = true,
 })
 
 hl.window_rule({

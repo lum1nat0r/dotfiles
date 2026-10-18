@@ -323,6 +323,95 @@ checked visually, and Hypridle retained its sleep-delay inhibitor. Unit validati
 and Gitleaks passed. A real logout/login and compositor crash were not triggered.
 The existing failed Dolphin unit from the earlier session disconnect was not reset.
 
+## Keyboard workflow shortcuts
+
+The active `E14/.config/hypr/hyprland.lua` adds:
+
+| Shortcut | Action |
+| --- | --- |
+| `Super+H` | Open the searchable cheat-sheet of all registered global shortcuts |
+| `Super+F` | Toggle maximization inside the usable monitor area, keeping the bar visible |
+| `Super+Ctrl+F` | Toggle true fullscreen |
+| `Super+Shift+F` | Toggle floating |
+| `Super+Shift+Arrow` | Swap the focused window with its directional tiling neighbor |
+| `Super+Ctrl+Arrow` | Resize by 40 pixels per step; repeats while held (left/up shrink, right/down grow) |
+| `Super+Tab` | Switch to the previous workspace; repeat to switch back |
+| `Super+N` | Toggle the SwayNC notification panel |
+| `Super+Shift+N` | Toggle SwayNC do-not-disturb |
+| `Shift+Print` | Select an area and copy its PNG directly to the clipboard, without opening Satty |
+| `Super+T` | Create or toggle the dedicated terminal scratchpad |
+
+Existing shortcuts stay unchanged: `Print` opens Satty for annotation,
+`Super+V` selects clipboard history, `Super+S` toggles the shared Telegram
+scratchpad, and Alt-Tab remains the Hyprshell window switcher.
+
+The terminal uses Kitty class `e14-scratch-terminal` and `special:terminal`,
+separate from Telegram's `special:magic` and the normal `kitty` workspace-1 rule.
+It opens floating at 1200×750, a size that fits both configured monitors.
+Subsequent toggles preserve the same shell and show it on the focused monitor.
+Closing it allows the next invocation to start a new shell. A nonblocking
+`flock` held for Kitty's lifetime prevents duplicate launches before the window
+maps, including across configuration reloads. Its lock file lives only under
+`$XDG_RUNTIME_DIR`; no shell content or runtime state is versioned.
+
+Verification exercised the configured callbacks through the running compositor's
+Lua IPC: both fullscreen modes, floating, all four swap and resize directions,
+both tiled resize axes, workspace back-and-forth, notification panel and DND.
+The actual slurp selector was dragged with a temporary Wayland virtual pointer;
+grim delivered the selected PNG to the clipboard without Satty. Aborting the
+selector left the clipboard unchanged. Scratchpad startup survived 20 rapid
+calls without duplication, reopening after close worked, and the same terminal
+was shown/hidden on both monitors within their bounds. Screenshots checked the
+terminal and notification panel. All 16 new key combinations were registered
+exactly once; configuration verification, 21 existing workspace regression checks
+and Gitleaks passed. Physical key presses and hold-to-repeat delivery were not
+tested: desktop-control helpers were unavailable and synthetic keyboard input
+did not reach the selector. The compositor action paths were exercised directly.
+
+The existing configuration file remains symlinked; reload with
+`hyprctl reload config-only`, without restowing.
+
+### Searchable shortcut cheat-sheet
+
+`Super+H` opens a three-column GTK layer-shell overlay on the focused monitor;
+Escape or **Schließen** closes it. The search field is focused immediately and
+filters by category, key combination and action, including multiple search terms.
+The sheet scrolls when the monitor cannot fit all rows. Repeated launches do not
+stack overlays. It only displays shortcuts; selecting text never runs an action.
+
+The data comes from `hyprctl -j binds` each time the overlay opens, including
+Hyprshell's dynamically registered Alt-Tab bindings. This covers global desktop
+shortcuts, not every application's internal shortcuts. Number and arrow families
+are grouped without losing their alternatives. All E14 bindings now carry
+`description = "Category: Action"` metadata beside the actual action, rather than
+maintaining a separate shortcut list. Hyprland 0.56 omits Lua keycodes from its
+binds IPC, so the two MX gesture descriptions also carry their readable key
+labels as `"Category: Key → Action"`.
+
+The implementation is `E14/.config/hypr/scripts/shortcut-help.py`, styled by
+`E14/.config/wofi/shortcut-help.css` and using the existing launcher blur rule.
+Both files are individually allowlisted and deployed as file symlinks. It reuses
+the installed GTK 3/PyGObject/gtk-layer-shell stack, with no additional daemon or
+packages. Search text and the instance lock remain runtime-only; no personal data
+or credentials are included.
+
+Deployment used `stow --simulate --verbose --restow --ignore=__pycache__ E14`
+followed by `stow --restow --ignore=__pycache__ E14`. The ignore flag leaves the
+pre-existing repository/local Python bytecode caches untouched instead of
+deploying them or overwriting the conflicting local cache.
+
+Verification opened the real overlay through the configured Super+H callback,
+checked screenshots on both outputs, moved the laptop's vertical scrollbar to
+the final rows, and exercised search, multiple search terms, empty results,
+clearing search, the close button and the Escape GTK key-event handler.
+All 78 registered bindings had descriptions and produced 47 readable rows in
+nine categories. Repeated launch kept one overlay. A comparison with the previous
+live bindings confirmed every existing key combination and behavioral flag was
+unchanged. Config verification, 21 workspace regression checks and Gitleaks scans
+passed. Physical Super+H/Escape key delivery was not tested; the desktop-control
+session was unavailable.
+
+
 ## Application workspaces
 
 `E14/.config/hypr/hyprland.lua` assigns newly opened windows by application class:

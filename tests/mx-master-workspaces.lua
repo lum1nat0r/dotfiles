@@ -5,7 +5,7 @@ local function inert() end
 local hl = {
     monitor = inert, on = inert, env = inert, config = inert,
     curve = inert, animation = inert, layer_rule = inert,
-    gesture = inert, device = inert, window_rule = inert,
+    gesture = inert, device = inert, window_rule = inert, workspace_rule = inert,
     exec_cmd = function() error("configuration must not execute commands") end,
     bind = function(key, callback) callbacks[key] = callback end,
     get_active_workspace = function() return current end,
@@ -17,12 +17,13 @@ local hl = {
         exec_cmd = inert, layout = inert,
         focus = function(target) return target end,
         window = { close = inert, pseudo = inert, move = inert,
-                   drag = inert, resize = inert },
+                   drag = inert, resize = inert, fullscreen = inert,
+                   float = inert, swap = inert },
         workspace = { toggle_special = inert },
     },
 }
 local environment = {
-    hl = hl, ipairs = ipairs,
+    hl = hl, ipairs = ipairs, tostring = tostring,
     os = { getenv = function(key)
         assert(key == "HOME")
         return "/isolated-home"
