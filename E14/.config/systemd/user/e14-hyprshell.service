@@ -1,0 +1,12 @@
+[Unit]
+Description=E14 Alt-Tab window switcher
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Environment=GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1
+ExecStart=%h/.local/bin/hyprshell --config-file %h/.config/hyprshell/config.toml --system-data-dir %h/.local/share/hyprshell run
+Restart=on-failure
+TimeoutStopSec=5
+Slice=session.slice

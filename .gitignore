@@ -46,6 +46,9 @@
 !/E14/.config/waybar/style.css
 !/E14/.config/wofi/powermenu.css
 !/E14/.config/wofi/style.css
+!/E14/.config/hyprshell/config.toml
+!/E14/.config/hyprshell/styles.css
+!/E14/.config/systemd/user/e14-hyprshell.service
 
 # Local overrides, credentials and generated files are never intentional inputs.
 .env

@@ -670,6 +670,12 @@ the location has an edit button that replaces it with a prefilled city input.
 Enter or ✓ saves; Escape cancels editing. Open-Meteo's first matching place is
 used; the full resolved region is shown in the card.
 
+The compact window uses `resizable={false}` so GTK follows the row's natural
+size when Spotify appears or disappears. A resizable window retains its wider
+allocation after hiding the music summary, stretching the expanding weather label.
+Live verification opened and quit Spotify on both monitors: the row returned
+from 770px to 458px, while the weather summary stayed 260×44px.
+
 `weather.tsx` shares one weather request across monitors and refreshes every
 15 minutes. `weather.py` uses Python's standard library and the
 [Open-Meteo geocoding](https://open-meteo.com/en/docs/geocoding-api) and
@@ -1017,6 +1023,45 @@ Verification: an interactive `pkcheck` for
 `com.1password.1Password.unlock` completed successfully after installing the
 override. Unlocking a real vault and the password fallback were not exercised.
 
+### Alt-Tab window switcher
+
+Hyprshell 4.10.8 provides an MRU window switcher across all workspaces and
+monitors (`filter_by = []`). Wofi remains the application launcher;
+Hyprshell's overview is disabled.
+
+| Shortcut | Action |
+| --- | --- |
+| `Alt+Tab` | Open the switcher and advance through recent windows while holding Alt |
+| `Alt+Shift+Tab` | Select in reverse order |
+| Release Alt | Focus the selected window |
+| `Escape` | Cancel without switching |
+
+`E14/.config/hyprshell/config.toml` and `styles.css` are individually Stow-linked.
+The dark translucent cards use rounded edges, inset highlights and a blue selection
+border. Hyprland blurs the `hyprshell_switch` layer; the service disables GTK's
+background-effect protocol for the same reason as the island services above.
+Hyprshell registers its own shortcuts dynamically, including after a Hyprland reload.
+`e14-session.target` starts `e14-hyprshell.service` with the graphical session.
+
+The current installation is user-local because sudo requires a password:
+`~/.local/bin/hyprshell`, with upstream theme assets in `~/.local/share/hyprshell`.
+The upstream x86_64 v4.10.8 archive was verified against the reviewed
+`hyprshell-bin` AUR recipe's SHA-256:
+`eb0fd873fe8dbf43f7d4acac2a83f99b3ece40f575b937716fc0a32acf8593de`.
+These binaries/assets and runtime state are not versioned. On another machine,
+install the same release to these paths or adapt the service to a packaged binary.
+Stow deployment used `--ignore='__pycache__'` to exclude existing Python runtime
+files that otherwise conflict; no existing regular files were overwritten.
+
+Verification: valid Hyprshell config, running session service, registered Alt-Tab
+and reverse/release bindings, and no Hyprland config errors. The real switcher
+was opened via its IPC command and visually checked over terminal windows.
+Confirming changed the focused window, and Escape closed the overlay.
+Synthetic `wtype` Alt combinations did
+not trigger even an independent temporary Hyprland binding, so physical Alt-Tab
+and modifier-release behavior remain unverified. Desktop-control capture/input
+were unavailable; the visual check used `grim` after those helpers failed.
+
 ### Local dictation with Handy
 
 Install `handy-bin` from the AUR and Arch's `wtype` package. The current
@@ -1028,7 +1073,7 @@ Updates belong to the package manager, not Handy's built-in updater.
 
 | Shortcut | Action |
 | --- | --- |
-| `Super+O` (hold) | Record while O is held; release O to stop and insert the transcription |
+| `Super+O` | Press once to start recording; press again to stop and insert the transcription |
 | `Super+Shift+O` | Cancel the current recording/operation without inserting text |
 
 Use these Handy preferences:
@@ -1038,7 +1083,7 @@ Use these Handy preferences:
 | Model | Parakeet V3 (`parakeet-tdt-0.6b-v3`, local CPU inference) |
 | Language / translation | Automatic detection; translation to English off |
 | Microphone | `pipewire`; PipeWire's default source is the UGREEN webcam |
-| Recording | Push to talk; always-on microphone off |
+| Recording | Hyprland toggle shortcut; always-on microphone off |
 | Paste method | External Script |
 | External script | `$HOME/.config/hypr/scripts/handy-paste.py` (expand `$HOME` in the setting) |
 | Overlay / feedback | Overlay off; audio feedback on at 40% |
@@ -1053,9 +1098,8 @@ restores the previous clipboard payload. Kitty's `Shift+Insert` reads the primar
 selection, so it can insert unrelated selected text instead of the dictation.
 Do not use Handy's Direct Input method with this German keyboard layout.
 Keep the intended input field focused until transcription finishes.
-Hyprland handles the press and release edges through Handy's external toggle
-command. Releasing Super before O still stops on O release. Cancelling clears
-the held state, so the later release cannot start another recording.
+Hyprland invokes Handy's external toggle command on each `Super+O` press.
+Releasing the keys does not stop recording; the next press stops it.
 
 Handy's `~/.local/share/com.pais.handy/settings_store.json` remains local:
 the same store can contain API keys and device-specific preferences.
@@ -1069,7 +1113,4 @@ source into the real Handy recorder, then into Chromium, Kitty and an isolated
 OMP composer without submitting a message. Clipboard text restoration passed;
 Handy's history table and recording directory were empty afterward. Physical
 microphone quality and a complete desktop relogin were not tested.
-Push-to-talk verification used synthesized key-down/key-up events and an isolated
-PipeWire source: recording remained active while held, stopped on release in
-either modifier order, and stayed idle after a short tap or cancellation.
 

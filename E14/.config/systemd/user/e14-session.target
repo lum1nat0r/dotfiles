@@ -10,3 +10,4 @@ Wants=e14-clipboard@text.service e14-clipboard@image.service
 Wants=e14-handy.service e14-nm-applet.service
 Wants=blueman-applet.service
 Wants=e14-music-island.service e14-right-islands.service
+Wants=e14-hyprshell.service

@@ -204,6 +204,14 @@ hl.layer_rule({
     ignore_alpha = 0,
 })
 
+hl.layer_rule({
+    name = "window-switcher-glass",
+    match = { namespace = "hyprshell_switch" },
+    blur = true,
+    xray = false,
+    ignore_alpha = 0,
+})
+
 -- Sample the wallpaper, not application windows, across compact and expanded islands.
 hl.layer_rule({
     name = "waybar-glass",
@@ -333,25 +341,8 @@ hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliph
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.exec_cmd(powerMenu))
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo())
-local handyHeld = false
-hl.bind(mainMod .. " + O", function()
-    if not handyHeld then
-        handyHeld = true
-        hl.exec_cmd("handy --toggle-transcription")
-    end
-end)
--- Release must still stop recording if Super was released before O.
-hl.bind("O", function()
-    if handyHeld then
-        handyHeld = false
-        hl.exec_cmd("handy --toggle-transcription")
-    end
-end, { release = true, ignore_mods = true, non_consuming = true })
-hl.bind(mainMod .. " + SHIFT + O", function()
-    -- A cancelled hold must not start a new recording when O is released.
-    handyHeld = false
-    hl.exec_cmd("handy --cancel")
-end)
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("handy --toggle-transcription"))
+hl.bind(mainMod .. " + SHIFT + O", hl.dsp.exec_cmd("handy --cancel"))
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 hl.bind("Print", hl.dsp.exec_cmd(

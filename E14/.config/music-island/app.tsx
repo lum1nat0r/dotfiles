@@ -111,7 +111,7 @@ function CenterIslands({ monitor, weather }: { monitor: Gdk.Monitor; weather: We
   }
   return (
     <>
-      <window {...common} name="center-islands-compact" visible>
+      <window {...common} name="center-islands-compact" resizable={false} visible>
         <box class="center-row" spacing={12} $={self => { summary = self }}>
           <box visible={data(d => d.visible)} valign={Gtk.Align.START} $={self => { musicSummary = self }}>
           <box widthRequest={musicWidth}
