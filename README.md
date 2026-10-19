@@ -347,6 +347,8 @@ The active `E14/.config/hypr/hyprland.lua` adds:
 | `Super+Shift+N` | Toggle SwayNC do-not-disturb |
 | `Shift+Print` | Select an area and copy its PNG directly to the clipboard, without opening Satty |
 | `Super+T` | Create or toggle the dedicated terminal scratchpad |
+| `Super+W` | Show or hide the WhatsApp Web scratchpad |
+| `Super+Shift+W` | Move the focused window into the WhatsApp scratchpad |
 
 Existing shortcuts stay unchanged: `Print` opens Satty for annotation,
 `Super+V` selects clipboard history, `Super+S` toggles the shared Telegram
@@ -467,20 +469,23 @@ checks drove the actual GTK widgets from a temporary in-memory smoke harness.
 
 ## Application workspaces
 
-`E14/.config/hypr/hyprland.lua` assigns newly opened windows by application class:
+`E14/.config/hypr/hyprland.lua` assigns windows by application class, with a
+title-sensitive Firefox exception for WhatsApp:
 
 | Application | Class | Workspace |
 | --- | --- | --- |
 | Kitty terminal | `kitty` | 1 |
 | Telegram (floating, no initial focus) | `org.telegram.desktop` | `special:magic` (`silent`) |
 | Firefox | `firefox` | 2 |
+| WhatsApp Web (floating) | `firefox`, title containing `WhatsApp` | `special:whatsapp` |
 | VS Code | `com.microsoft.VSCode` | 3 |
 | OrcaSlicer | `orcaslicer` | 4 |
 | Spotify | `Spotify` | 5 |
 
-Opening a matching window switches to its destination workspace, except Telegram.
-Application rules do not reassign existing windows to other workspaces on reload;
-the monitor rules below can move whole workspaces. Autostart is unchanged.
+The class-based rules switch to the destination workspace, except for Telegram.
+They do not reassign existing windows on reload; the WhatsApp title handler below
+also checks existing Firefox windows. The monitor rules below can move whole
+workspaces. Autostart is unchanged.
 Reload with `hyprctl reload`; no restow is needed for this existing file link.
 Verified on the running compositor with temporary Kitty windows advertising each
 class: all four landed on their assigned workspace and switched focus there.
@@ -496,6 +501,35 @@ Verified with the actual Telegram application: it reopened in `special:magic`,
 floating and unpinned, initially hidden. The existing toggle dispatcher showed
 it on DP-1 (visually checked) and hid it again. `hyprctl configerrors` was empty;
 Gitleaks found no secrets in the Hyprland configuration.
+
+WhatsApp Web uses its own `special:whatsapp`: `Super+W` shows/hides it on the
+focused monitor, and `Super+Shift+W` moves the focused window there manually.
+Open WhatsApp in a **separate Firefox window**, for example with
+`firefox --new-window https://web.whatsapp.com/`, or detach its tab into a window.
+The match is class `firefox` plus the case-sensitive text `WhatsApp` anywhere in
+the window title, including unread-count prefixes such as `(2) WhatsApp`.
+It acts on the whole window, not a browser tab or URL; any other page with
+`WhatsApp` in its title also matches. Navigating away does not move it back.
+
+Firefox initially maps the real WhatsApp window as `Mozilla Firefox`, then sets
+its page title after loading. Hyprland's workspace/float window-rule effects are
+[static](https://wiki.hypr.land/Configuring/Basics/Window-Rules/#static-effects),
+so Lua `window.open` and `window.title` handlers perform the assignment instead.
+The first match floats, sizes to 1200×750, silently moves and centers the window.
+Already assigned windows are left untouched: title changes and reloads preserve
+their visibility, size and position. Reload also picks up already-open matching
+Firefox windows. `Super+W` only toggles; it does not launch Firefox or add autostart.
+No extra client, extension or browser profile is needed; Firefox login/session
+data stays local and is not part of the Stow package.
+
+Verified with real WhatsApp Web windows: delayed titles routed newly opened
+windows automatically, and existing matches were assigned on reload. Showing and
+hiding worked on both monitors with the window inside their bounds; screenshots
+checked the actual browser surface. The manual move action and preservation of a
+custom size across reload were exercised, while original application workspace
+assignments stayed unchanged. Configuration reload and Gitleaks passed. Actions
+were exercised through Lua IPC: native desktop control was unavailable, and
+`wtype` did not activate the shortcut, so physical key delivery remains untested.
 
 ### Monitor assignment and docking
 

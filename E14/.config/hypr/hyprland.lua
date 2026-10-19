@@ -392,9 +392,11 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }), { description = "Workspaces: Fenster in Workspace verschieben (0 = 10)" })
 end
 
--- Example special workspace (scratchpad)
 hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"), { description = "Scratchpads: Telegram-Scratchpad anzeigen / verbergen" })
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }), { description = "Scratchpads: Fenster ins Telegram-Scratchpad verschieben" })
+
+hl.bind(mainMod .. " + W",         hl.dsp.workspace.toggle_special("whatsapp"), { description = "Scratchpads: WhatsApp-Scratchpad anzeigen / verbergen" })
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.window.move({ workspace = "special:whatsapp" }), { description = "Scratchpads: Fenster ins WhatsApp-Scratchpad verschieben" })
 
 hl.bind(mainMod .. " + T", function()
     if #hl.get_windows({ class = "e14-scratch-terminal", mapped = true }) > 0 then
@@ -495,6 +497,25 @@ hl.window_rule({
     match = { class = "^firefox$" },
     workspace = "2",
 })
+
+-- Firefox sets the page title after mapping; static workspace rules miss WhatsApp.
+local function moveWhatsAppToScratchpad(window)
+    if not window or not window.mapped or window.class ~= "firefox"
+        or not window.title:find("WhatsApp", 1, true)
+        or (window.workspace and window.workspace.name == "special:whatsapp") then
+        return
+    end
+    hl.dispatch(hl.dsp.window.float({ window = window, action = "on" }))
+    hl.dispatch(hl.dsp.window.resize({ window = window, x = 1200, y = 750, relative = false }))
+    hl.dispatch(hl.dsp.window.move({ window = window, workspace = "special:whatsapp", follow = false }))
+    hl.dispatch(hl.dsp.window.center({ window = window }))
+end
+
+hl.on("window.open", moveWhatsAppToScratchpad)
+hl.on("window.title", moveWhatsAppToScratchpad)
+for _, window in ipairs(hl.get_windows({ class = "firefox", mapped = true })) do
+    moveWhatsAppToScratchpad(window)
+end
 
 hl.window_rule({
     name = "vscode-workspace",
