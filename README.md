@@ -207,7 +207,7 @@ Oh My Zsh loading, Git aliases and completion security.
 The package contains explicitly reviewed configuration files:
 
 - Bash interactive settings/login sourcing and Zsh/Oh My Zsh preferences.
-- Hyprland Lua configuration, Hyprlock/Hypridle configuration and the Wofi launcher.
+- Hyprland Lua configuration, Hyprlock/Hypridle/Hyprpaper configuration and the Wofi launcher.
 - The E14 systemd user-session target, compositor lifetime watcher and desktop-service units.
 - Waybar, SwayNC and Wofi configuration/styles and the notification helper.
 - The music-island and right-islands widget sources/styles/helpers and shared island palette.
@@ -255,7 +255,7 @@ This profile assumes one graphical session for this user.
 
 | Component | systemd user unit |
 | --- | --- |
-| Notifications, idle lock, bar, polkit | Existing `swaync`, `hypridle`, `waybar`, `hyprpolkitagent` services |
+| Notifications, idle lock, wallpaper, bar, polkit | Existing `swaync`, `hypridle`, `hyprpaper`, `waybar`, `hyprpolkitagent` services |
 | Desktop portals | Existing `xdg-desktop-portal` and `xdg-desktop-portal-hyprland` services |
 | Clipboard history | `e14-clipboard@text.service`, `e14-clipboard@image.service` |
 | Dictation and network tray | `e14-handy.service`, `e14-nm-applet.service` |
@@ -329,6 +329,30 @@ without losing original application windows. Both monitors' bars/islands were
 checked visually, and Hypridle retained its sleep-delay inhibitor. Unit validation
 and Gitleaks passed. A real logout/login and compositor crash were not triggered.
 The existing failed Dolphin unit from the earlier session disconnect was not reset.
+
+### Wallpaper
+
+Install Arch's `hyprpaper` package. `E14/.config/hypr/hyprpaper.conf` is linked to
+`~/.config/hypr/hyprpaper.conf`; an empty `monitor` selects the fallback image on
+both displays, with `fit_mode = cover`. The image itself remains local at
+`~/wallpapers/audi_quattro_80s_neon_2560x1440.png` and must exist on each deployment.
+
+`e14-session.target` starts the packaged `hyprpaper.service`, whose lifecycle is
+tied to `graphical-session.target`. Do not run `hyprpaper` directly at the end of
+`start-session.sh`: it remains in the foreground and blocks the subsequent initial
+terminal launch. After changing the wallpaper configuration, apply it with
+`systemctl --user restart hyprpaper.service`.
+
+HyprMod's generated `~/.config/hypr/hyprland-gui.lua` remains local. The main Lua
+configuration includes the local Hyprland directory in `package.path` so its final
+GUI override import also resolves when Hyprland follows the main file's Stow link.
+The original regular `hyprland.lua` and `hyprpaper.conf` were backed up outside the
+repository before restoring/adding their individual file links.
+
+Verification: both session-start tests and unit/config validation passed. The live
+service loaded the image on both outputs, checked through IPC and desktop captures.
+Repeated service start and a config-only reload preserved one Hyprpaper process.
+No logout/login was triggered.
 
 ## Keyboard workflow shortcuts
 

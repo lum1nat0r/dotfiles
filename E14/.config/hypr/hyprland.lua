@@ -578,3 +578,9 @@ hl.window_rule({
     float = true,
 })
 
+
+-- Keep GUI overrides local when Hyprland resolves this file through its Stow link.
+package.path = os.getenv("HOME") .. "/.config/hypr/?.lua;" .. package.path
+
+-- HyprMod managed settings
+require("hyprland-gui")
