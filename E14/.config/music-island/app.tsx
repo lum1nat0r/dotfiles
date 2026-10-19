@@ -132,7 +132,6 @@ function CenterIslands({ monitor, weather }: { monitor: Gdk.Monitor; weather: We
             window: self,
             child: playerCard,
             driver: musicSummary,
-            getOriginX: () => musicSummary.get_width() / 2,
             onJoinedChanged: setPlayerJoined,
           })
         }}>

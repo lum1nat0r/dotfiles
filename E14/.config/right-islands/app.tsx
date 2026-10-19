@@ -478,7 +478,6 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
             window: self,
             child: statsContent,
             driver: statsSummary,
-            getOriginX: (width) => width - statsSummary.get_width() / 2,
             onJoinedChanged: setStatsJoined,
           });
         }}
@@ -490,7 +489,6 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
             window: self,
             child: controlsContent,
             driver: controlsSummary,
-            getOriginX: (width) => width - controlsSummary.get_width() / 2,
             onJoinedChanged: setControlsJoined,
           });
         }}

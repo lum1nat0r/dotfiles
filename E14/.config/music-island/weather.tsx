@@ -178,7 +178,7 @@ export function WeatherIsland({ monitor, weather, getRow, application }: {
       $={self => {
         popup = self
         reveal = createFluidReveal({ window: self, child: card, driver: header,
-          getOriginX: () => header.get_width() / 2, onJoinedChanged: setJoined })
+          onJoinedChanged: setJoined })
       }}>
       <Gtk.EventControllerKey onKeyPressed={(_self, key) => {
         if (key !== Gdk.KEY_Escape) return false
