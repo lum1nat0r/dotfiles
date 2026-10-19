@@ -464,8 +464,8 @@ function RightIslands({ monitor }: { monitor: Gdk.Monitor }) {
             />
             <label label={info((d) => d.wifi ? "󰤨" : "󰤭")} />
             <label label={info((d) => d.bluetooth ? "󰂯" : "󰂲")} />
-            <label label={audio((d) => d.sink.muted ? "󰝟" : "󰕾")} />
-            <label label={audio((d) => d.source.muted ? "󰍭" : "󰍬")} />
+            <label class={audio((d) => d.sink.muted ? "muted" : "")} label={audio((d) => `${d.sink.muted ? "󰝟" : "󰕾"} ${d.sink.volume}%`)} />
+            <label class={audio((d) => d.source.muted ? "muted" : "")} label={audio((d) => `${d.source.muted ? "󰍭" : "󰍬"} ${d.source.volume}%`)} />
             <label label="󰂚" />
           </box>
           </box>

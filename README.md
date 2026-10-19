@@ -719,6 +719,12 @@ Both start after Waybar. AGS 3.1 writes every `ags run` bundle to the same
 Keep this ordering and use the units rather than launching additional AGS copies.
 GTK box spacing belongs in the TSX `spacing` property, not in GTK CSS.
 
+The right-hand controls island shows speaker and microphone percentages beside
+their icons even while collapsed. These use the same live audio state as the
+expanded controls; muted devices retain their configured percentage and show
+the muted icon. In the collapsed island, each muted device's icon and percentage
+turn red; unmuting restores the normal text color.
+
 The center music and clock compact surfaces have a 44px outer height, matching
 Waybar and right-islands at a 9px top offset. The player anchors below the measured
 music header, so reducing the header does not change its width, content or animation.

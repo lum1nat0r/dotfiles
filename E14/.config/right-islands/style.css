@@ -18,6 +18,9 @@ window.right-window,
   min-height: 42px;
   padding: 0 14px;
 }
+.muted {
+  color: #ff6b6b;
+}
 /* Preserve the summary's allocation while joining its outline to the detail surface. */
 .compact.joined {
   border-bottom-width: 0;
