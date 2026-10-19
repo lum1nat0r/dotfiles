@@ -224,6 +224,7 @@ hl.layer_rule({
 hl.layer_rule({
     name = "music-island-glass",
     match = { namespace = "music-island" },
+    no_anim = true, -- The GTK reveal owns the motion; a layer fade would mask it.
     blur = true,
     xray = false,
     ignore_alpha = 0,
@@ -232,6 +233,7 @@ hl.layer_rule({
 hl.layer_rule({
     name = "right-islands-glass",
     match = { namespace = "right-islands" },
+    no_anim = true,
     blur = true,
     xray = false,
     ignore_alpha = 0,

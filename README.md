@@ -988,30 +988,33 @@ backup/install procedure above before expecting this effect at login.
 
 ### Native island dropdown motion
 
-The existing music, statistics and controls dropdowns use the shared
-`E14/.config/island-shared/fluid-reveal.ts` GTK4 widget. Each entire card grows
-downward from the bottom centre of its own permanent summary and retracts to
-that same point, not the centre of the wider dropdown. The clock and permanent
-row do not participate in that
-layout; workspace/button hover lighting and the existing card materials remain
-unchanged. Statistics and controls keep independent contours while switching.
+Music, weather, statistics and controls use the shared
+`E14/.config/island-shared/fluid-reveal.ts` GTK4 widget. Their cards unroll
+downward at full width from a fixed top edge, rather than growing from a point.
+A rounded lower clip reveals the naturally sized content without squeezing
+text or buttons. Only the opening overshoot stretches the card vertically;
+the permanent header, clock and row stay in place.
 
-The module uses libadwaita's critically damped spring `(1, 1, 500)`, with a
-160ms leave delay in the callers and continuous velocity on reversal. These
-are local tuning values, not Apple's parameters or an exact 420ms duration.
-Full-size child allocation plus a GSK transform avoids per-frame reflow.
-The surface input region follows the displayed card instead of intercepting
-the invisible remainder. GTK's disabled-animation preference is respected.
-Media disappearance closes the player immediately; returning media alone does
-not reopen it.
+The libadwaita spring uses `(0.65, 1, 500)` for damping ratio, mass and stiffness.
+Its lower damping makes the final rebound visible. The surface reserves 10%
+vertical clearance so the spring is not cut off at the window edge, without
+resizing the Wayland surface on every frame. Closing clamps at zero to prevent
+a second flash. Reversal preserves velocity; the callers retain their 160ms
+leave delay. GTK's disabled-animation preference is respected. Media disappearance
+still closes the player immediately without reopening it when media returns.
 
-The compact header's joined contour follows visible spring progress, not popup
-mapping: its bottom border and rounded corners stay intact until 90% expansion,
-and return as soon as shrinking passes below that point. Reentry follows the
-same threshold without a separate timer. Immediate closure and disposal restore
-the compact contour immediately.
+The reveal viewport has a changing allocation and hidden overflow: GTK picking
+does not follow snapshot clips alone. Both GTK picking and the Wayland input
+region exclude unrevealed content and unused spring clearance. The header joins
+as soon as the full-width reveal becomes visible and restores its compact contour
+at closure; there is no delayed 90% join threshold.
 
-Run the real-widget regression on an available GTK display:
+The `music-island` and `right-islands` rules in `hyprland.lua` set
+[`no_anim = true`](https://wiki.hypr.land/configuring/core/rules/layer-rules/).
+This removes Hyprland's competing layer fade, which otherwise hides the early
+roll frames. Waybar and other window/layer animations are unchanged.
+
+Run the real-widget regression from the repository root on a GTK display:
 
 ```sh
 ags bundle tests/island-fluid-reveal.ts /tmp/island-fluid-reveal-test.js
@@ -1020,31 +1023,21 @@ ags bundle E14/.config/right-islands/app.tsx /tmp/right-islands-fluid-smoke.js
 GSK_RENDERER=cairo bash /tmp/island-fluid-reveal-test.js
 ```
 
-AGS 3.1 bundles are shell launchers despite the `.js` output name; do not pass
-them directly to `gjs -m`. Alternatively execute `tests/island-fluid-reveal.ts`
-directly. Verification passed on native Wayland and isolated Xvfb (`DISPLAY=:98`,
-`GDK_BACKEND=x11`): intermediate/off-centre bounds, full-size layout, GTK picking,
-stable header dimensions, opening/closing reversals, delayed hiding, disabled
-animations, immediate closure and disposal during motion/driver destruction.
-The fixed top-right attachment during opening and closing also passed the
-real-widget regression on native Wayland.
-Contour-timing checks use both actual island stylesheets on mapped GTK headers:
-the bottom border remains during early growth, disappears at full expansion,
-and returns while the shrinking popup is still visible. Reentry, disabled
-animations, immediate closure and disposal also preserve the correct contour.
-Broadway was attempted with a connected browser but produced JavaScript errors
-and stalled/incorrect frame timings; it was not accepted as animation proof.
+AGS bundles are shell launchers despite their `.js` output name. The regression
+loads the real stylesheets by path so their shared palette imports resolve.
+It passed on native Wayland: full-width intermediate reveal, natural-size content,
+clipped picking, fixed header, overshoot clearance, continuous reversals, completed
+closure, disabled animations, immediate closure and disposal during motion.
+The final Cairo test run also emitted two GDK frame-timing warnings around the
+animation-preference/unmapping checks; all assertions passed.
 
-The shared source passed Gitleaks and manual personal-data review and was
-deployed as an individual Stow link. Restow required `--ignore='__pycache__'`
-because an existing unrelated Python cache conflicted; neither cache was
-overwritten. Existing source links were preserved. Both deployed applications
-were restarted sequentially and registered successfully. Desktop capture is
-unavailable (`Wayland capture requires the wayland-pipewire feature`), so
-multi-monitor visual hover/contour checks, compositor-level input passthrough
-and the live media-loss producer scenario remain unverified. No media, audio,
-network, Bluetooth or power action was invoked. Test display services and
-temporary tools are not managed configuration.
+Live captures checked weather, stats and controls on both monitors, including
+roll frames, the stronger spring, re-entry and return to the 44px compact layers.
+Both deployed island services restarted successfully with no GTK warnings in
+their journals. Hyprland config verification/reload and Gitleaks passed.
+No Spotify player was active, so the live music/media-loss scenario was not exercised.
+No media, audio, network, Bluetooth, charging or power control was activated.
+Existing Stow file links were preserved; no new managed paths or restow were needed.
 
 ### Battery charge limit
 
