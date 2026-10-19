@@ -1,0 +1,55 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: Aaron Blasko <blaskoazzolaaaron [at] gmail.com>
+
+pkgname=hyprlock-fingerprint-fix
+_pkgname=hyprlock
+pkgver=0.9.6
+pkgrel=1
+pkgdesc='hyprland’s GPU-accelerated screen locking utility with fingerprint idle pause/resume'
+arch=(x86_64 aarch64)
+url="https://github.com/hyprwm/$_pkgname"
+license=(BSD-3-Clause)
+provides=("hyprlock=$pkgver")
+conflicts=(hyprlock)
+depends=(cairo # libcairo.so
+         libgcc # libgcc_s.so
+         'libstdc++' # libstdc++.so
+         glibc # libc.so libm.so
+         hyprgraphics libhyprgraphics.so
+         hyprlang libhyprlang.so
+         hyprutils libhyprutils.so
+         libdrm # libdrm.so
+         libglvnd libEGL.so
+         libxkbcommon libxkbcommon.so
+         mesa # libgbm.so
+         pam libpam.so
+         sdbus-cpp libsdbus-c++.so
+         wayland libwayland-client.so libwayland-egl.so
+         wayland-protocols)
+makedepends=(cmake
+             hyprwayland-scanner)
+backup=("etc/pam.d/$_pkgname")
+_archive="$_pkgname-$pkgver"
+source=("$url/archive/v$pkgver/$_archive.tar.gz"
+        fingerprint-idle.patch)
+sha256sums=('7f653b87765bcfff7c1f8e04af326a7e73bbcacd1fb7d4436f6a16624a2247bb'
+            '721f1bd1af12c03572da5191e5c55d5cc7a69b2c8366a79afba9fb9924004abc')
+
+prepare() {
+	cd "$_archive"
+	patch -Np1 --fuzz=0 --batch --forward < "$srcdir/fingerprint-idle.patch"
+}
+
+build() {
+	cd "$_archive"
+	cmake -B build \
+		-D CMAKE_INSTALL_PREFIX=/usr \
+		-D CMAKE_BUILD_TYPE=Release
+	cmake --build build
+}
+
+package() {
+	cd "$_archive"
+	DESTDIR="$pkgdir" cmake --install build
+	install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE
+}

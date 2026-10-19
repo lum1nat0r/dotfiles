@@ -552,6 +552,55 @@ The logind delay inhibitor is bounded by `InhibitDelayMaxSec` (currently 5 secon
 it is not an indefinite fail-closed block if the locker fails.
 See the [Hypridle sleep-inhibition documentation](https://wiki.hypr.land/Hypr-Ecosystem/hypridle/).
 
+### Fingerprint idle pause (custom Hyprlock package)
+
+`hyprlock/PKGBUILD` builds `hyprlock-fingerprint-fix` from Hyprlock 0.9.6 and
+the checksum-pinned `fingerprint-idle.patch`, based on the approach in
+[upstream PR #962](https://github.com/hyprwm/hyprlock/pull/962).
+It provides `hyprlock` and conflicts with the official package. Normal package
+updates do not replace this differently named package with official Hyprlock;
+it does **not** automatically receive new Hyprlock releases. Library ABI changes
+can require a rebuild; versioned shared-library dependencies expose those conflicts
+instead of silently ignoring them. Review the patch when updating its source version.
+
+The linked `hyprlock.conf` sets `auth:fingerprint:inactive_timeout = 30` seconds.
+After inactivity, verification stops and the sensor is released. Keyboard,
+pointer movement or clicks resume a paused scan. Touching only the paused scanner
+does not wake it. Thermal protection and the failed-scan limit are not disabled;
+terminal errors still require password authentication. PAM configuration is unchanged.
+Changes take effect at the next lock; no restow or Hypridle restart is needed.
+
+Build with outputs outside the repository:
+
+```sh
+sudo pacman -S --needed base-devel cmake hyprwayland-scanner
+mkdir -p "$HOME/.cache/hyprlock-fingerprint-fix"/{build,packages,sources,logs}
+(
+    cd hyprlock
+    BUILDDIR="$HOME/.cache/hyprlock-fingerprint-fix/build" \
+    PKGDEST="$HOME/.cache/hyprlock-fingerprint-fix/packages" \
+    SRCDEST="$HOME/.cache/hyprlock-fingerprint-fix/sources" \
+    LOGDEST="$HOME/.cache/hyprlock-fingerprint-fix/logs" \
+    CMAKE_BUILD_PARALLEL_LEVEL=4 makepkg --cleanbuild --log
+)
+sudo pacman -U "$HOME/.cache/hyprlock-fingerprint-fix/packages/hyprlock-fingerprint-fix-0.9.6-1-x86_64.pkg.tar.zst"
+```
+
+Accept replacing official `hyprlock` when prompted. Do not copy a binary over
+`/usr/bin/hyprlock`, pin the official package, or rebuild automatically in a
+Pacman transaction hook. Once an official version provides a suitable solution,
+remove or migrate `fingerprint:inactive_timeout` **before** switching packages
+with `sudo pacman -S hyprlock`. Unsupported options must not be left in the
+configuration used by the official locker.
+
+Smoke verification on the E14's ELAN `04f3:0c4b`: verification stopped and the
+device was released after 30 seconds; activity after about 85 seconds re-claimed
+the sensor, and a real `verify-match` unlocked the session. Package integrity,
+unchanged PAM file, build checksums and a Gitleaks scan were checked. A separate
+password-unlock test, 15-minute idle test and actual future package update remain
+unexercised. Builds, binaries and logs stay in the local cache, not Stow.
+Tracking: [issue #1](https://github.com/lum1nat0r/dotfiles/issues/1).
+
 ### Display power after locking
 
 Hypridle's `on_lock_cmd` starts a transient user timer only after the compositor
