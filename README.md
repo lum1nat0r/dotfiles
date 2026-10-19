@@ -91,6 +91,13 @@ This does not delete the repository files, remove unrelated local files, or
 automatically restore the original backup. Restore originals only after checking
 for newer local changes.
 
+## SSH shortcut
+
+Zsh provides `ssh-dark-factory` to connect to the dark-factory server.
+Open a new terminal or run `source ~/.zshrc` after changing the alias.
+`Super+H` also lists this alias and its description from `alias_descriptions` in
+`.zshrc`; reopening the help picks up changes without reloading Hyprland.
+
 ## Image viewer
 
 Gwenview is the image viewer, with Qt/KDE format plugins for WebP, TIFF, AVIF,
@@ -329,7 +336,7 @@ The active `E14/.config/hypr/hyprland.lua` adds:
 
 | Shortcut | Action |
 | --- | --- |
-| `Super+H` | Open the searchable cheat-sheet of all registered global shortcuts |
+| `Super+H` | Open the searchable cheat-sheet of live global shortcuts and configured Zsh aliases |
 | `Super+F` | Toggle maximization inside the usable monitor area, keeping the bar visible |
 | `Super+Ctrl+F` | Toggle true fullscreen |
 | `Super+Shift+F` | Toggle floating |
@@ -373,11 +380,18 @@ The existing configuration file remains symlinked; reload with
 
 ### Searchable shortcut cheat-sheet
 
-`Super+H` opens a three-column GTK layer-shell overlay on the focused monitor;
+`Super+H` opens a GTK layer-shell overlay on the focused monitor, with tabs for
+three-column **Tastenkürzel** and a full-width **Zsh-Aliase** list.
 Escape or **Schließen** closes it. The search field is focused immediately and
-filters by category, key combination and action, including multiple search terms.
-The sheet scrolls when the monitor cannot fit all rows. Repeated launches do not
-stack overlays. It only displays shortcuts; selecting text never runs an action.
+filters both tabs by category, key combination or alias name, description and
+command, including multiple search terms. Each tab shows its current matching-row
+count in parentheses (all entries when search is empty) and scrolls when needed.
+Repeated launches do not stack overlays. The sheet is
+read-only: selecting text never runs a shortcut or alias.
+
+`Ctrl+1` selects shortcuts and `Ctrl+2` selects aliases, returning focus to the
+search field while preserving its text, cursor and selection. `Ctrl+F` focuses
+the search field and selects its text for replacement. Escape closes the overlay.
 
 The data comes from `hyprctl -j binds` each time the overlay opens, including
 Hyprshell's dynamically registered Alt-Tab bindings. This covers global desktop
@@ -388,12 +402,37 @@ maintaining a separate shortcut list. Hyprland 0.56 omits Lua keycodes from its
 binds IPC, so the two MX gesture descriptions also carry their readable key
 labels as `"Category: Key → Action"`.
 
+The alias tab starts a fresh interactive `zsh -ic` on each opening and reads Zsh's
+actual `aliases`, `galiases` and `saliases` tables. This includes Oh My Zsh plugins,
+sourced files, computed definitions and final overrides, rather than parsing
+`alias` lines. Alias values are transferred as NUL-delimited fields, preserving
+quotes and multiline commands without evaluating them. Startup output is separate
+from the alias data. A failed or timed-out shell is reported in the alias tab;
+desktop shortcuts remain available.
+
+Optional descriptions live next to the aliases in `.zshrc`:
+
+```zsh
+alias ll='ls -lah'
+typeset -gA alias_descriptions
+alias_descriptions[ll]='Dateien einschließlich versteckter Dateien ausführlich anzeigen'
+```
+
+Described aliases appear first, with both description and effective command.
+Undescribed aliases still appear with their command. The existing
+`ssh-dark-factory` alias has a description in `E14/.zshrc`.
+Reopen the help after changing configuration; no restow or Hyprland reload is
+needed. This executes the normal `.zshrc` startup code, but never invokes the
+aliases themselves. Aliases created only in an already open terminal are not
+visible to a new shell, and shell functions are not aliases.
+
+
 The implementation is `E14/.config/hypr/scripts/shortcut-help.py`, styled by
 `E14/.config/wofi/shortcut-help.css` and using the existing launcher blur rule.
 Both files are individually allowlisted and deployed as file symlinks. It reuses
 the installed GTK 3/PyGObject/gtk-layer-shell stack, with no additional daemon or
-packages. Search text and the instance lock remain runtime-only; no personal data
-or credentials are included.
+packages. Search text, alias data and the instance lock remain runtime-only;
+they are not cached or added to the repository.
 
 Deployment used `stow --simulate --verbose --restow --ignore=__pycache__ E14`
 followed by `stow --restow --ignore=__pycache__ E14`. The ignore flag leaves the
@@ -410,6 +449,20 @@ live bindings confirmed every existing key combination and behavioral flag was
 unchanged. Config verification, 21 workspace regression checks and Gitleaks scans
 passed. Physical Super+H/Escape key delivery was not tested; the desktop-control
 session was unavailable.
+
+Alias-extension verification found the same 78 live bindings/47 shortcut rows
+and 240 configured aliases. The real overlay was exercised for tab switching,
+alias name/description/command searches, multi-term shortcut searches, no matches,
+clearing, the single-instance lock and the close button. Screenshots checked the
+styled tabs and alias list on both displays; the laptop panel fit 1920×1200.
+The alias-error page retained working shortcut rows, and the Escape GTK handler
+closed both laptop views. `python3 tests/shortcut-help.py` passed two isolated
+real-Zsh regressions covering plugins, overrides/removal, quoting/multiline values,
+global/suffix aliases, optional descriptions, non-execution and startup failure.
+`zsh -n E14/.zshrc` passed. Physical key delivery was not tested: native capture
+and AT-SPI tab activation failed, so screenshots used `grim` and interaction
+checks drove the actual GTK widgets from a temporary in-memory smoke harness.
+
 
 
 ## Application workspaces

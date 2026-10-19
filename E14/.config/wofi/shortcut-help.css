@@ -58,6 +58,28 @@ entry:focus, button:hover, button:focus {
     outline: none;
 }
 
+notebook, notebook > header, notebook > stack {
+    background-color: transparent;
+    border: none;
+}
+
+notebook > header {
+    padding-bottom: 12px;
+}
+
+notebook > header tabs tab {
+    background-color: rgba(165, 200, 255, 0.10);
+    border: 1px solid rgba(165, 200, 255, 0.16);
+    border-radius: 9px;
+    padding: 9px 16px;
+    margin-right: 8px;
+}
+
+notebook > header tabs tab:checked {
+    background-color: rgba(165, 200, 255, 0.18);
+    border-color: #a5c8ff;
+}
+
 .help-footer {
     color: #a9b5c9;
     font-size: 12px;

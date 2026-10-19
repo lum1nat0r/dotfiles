@@ -10,8 +10,9 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
+gi.require_version("Pango", "1.0")
 gi.require_version("GtkLayerShell", "0.1")
-from gi.repository import Gdk, Gtk, GtkLayerShell
+from gi.repository import Gdk, Gtk, GtkLayerShell, Pango
 
 
 KEY_NAMES = {
@@ -74,8 +75,34 @@ def shortcut_rows(bindings):
     return rows
 
 
+def alias_rows():
+    # Ask Zsh, not a source parser: plugins, quoting and later overrides all count.
+    result = subprocess.run(
+        ["zsh", "-ic", r"""
+zmodload zsh/parameter
+typeset -A alias_descriptions
+printf '\0E14_ALIASES\0'
+for table in aliases galiases saliases; do
+    for name value in "${(@kvP)table}"; do
+        printf '%s\0%s\0%s\0%s\0' "$table" "$name" "$value" "${alias_descriptions[$name]-}"
+    done
+done
+"""],
+        capture_output=True, text=True, check=True, timeout=10,
+    )
+    fields = result.stdout.split("\0E14_ALIASES\0", 1)[1].split("\0")
+    categories = {"aliases": "Zsh-Aliase", "galiases": "Globale Aliase", "saliases": "Suffix-Aliase"}
+    rows = []
+    for index in range(0, len(fields) - 1, 4):
+        table, name, command, description = fields[index:index + 4]
+        category = "Beschriebene Aliase" if description else categories[table]
+        action = f"{description}\n{command}" if description else command
+        rows.append((category, name, action))
+    return sorted(rows, key=lambda row: (row[0] != "Beschriebene Aliase", row[0], row[1].casefold()))
+
+
 class ShortcutHelp(Gtk.Window):
-    def __init__(self, monitor, rows):
+    def __init__(self, monitor, rows, aliases, alias_error=""):
         super().__init__(title="Hyprland · Cheat-Sheet")
         self.set_name("shortcut-help")
         self.set_visual(self.get_screen().get_rgba_visual())
@@ -107,28 +134,43 @@ class ShortcutHelp(Gtk.Window):
         close.connect("clicked", lambda *_: self.destroy())
         header.pack_end(close, False, False, 0)
         panel.pack_start(header, False, False, 0)
-        self.search = Gtk.SearchEntry(placeholder_text="Shortcuts suchen … z. B. Screenshot, Terminal oder Super + F")
+        self.search = Gtk.SearchEntry(placeholder_text="Suchen … z. B. Screenshot, ssh, git oder Super + F")
         self.search.connect("search-changed", self.filter_rows)
         panel.pack_start(self.search, False, False, 0)
 
+        notebook = Gtk.Notebook()
+        self.notebook = notebook
+        panel.pack_start(notebook, True, True, 0)
+        self.pages = []
+        self.add_page(notebook, "Tastenkürzel", rows, 3, geometry)
+        self.add_page(notebook, "Zsh-Aliase", aliases, 1, geometry, alias_error)
+        footer = Gtk.Label(label="Ctrl+1: Tastenkürzel · Ctrl+2: Aliase · Ctrl+F: Suche · Esc: Schließen\nSuper = Windows-Taste · Halten = Wiederholung · 3 Finger horizontal = Workspace wechseln\nAlt-Tab: Alt halten, mit Tab wählen, Alt loslassen bestätigen · Enter bestätigen / Esc abbrechen\nBei jedem Öffnen live geladen · Aliase zeigen Beschreibung und Befehl, führen ihn aber nicht aus.", xalign=0)
+        footer.get_style_context().add_class("help-footer")
+        footer.set_line_wrap(True)
+        panel.pack_start(footer, False, False, 0)
+
+    def add_page(self, notebook, title, rows, column_count, geometry, error=""):
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        tab = Gtk.Label(label=f"{title} ({len(rows)})")
+        notebook.append_page(page, tab)
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll.set_overlay_scrolling(False)
-        scroll.set_min_content_height(min(1000, max(240, geometry.height - 300)))
-        panel.pack_start(scroll, True, True, 0)
+        scroll.set_min_content_height(min(900, max(240, geometry.height - 400)))
+        page.pack_start(scroll, True, True, 0)
         columns = Gtk.Box(spacing=28, homogeneous=True)
         scroll.add(columns)
-        stacks = [Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18) for _ in range(3)]
+        stacks = [Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18) for _ in range(column_count)]
         for stack in stacks:
             stack.set_valign(Gtk.Align.START)
             columns.pack_start(stack, True, True, 0)
         sections = {}
         for category, combo, action in rows:
             sections.setdefault(category, []).append((combo, action))
-        self.sections = []
-        heights = [0, 0, 0]
+        page_sections = []
+        heights = [0] * column_count
         for category, entries in sections.items():
-            index = min(range(3), key=heights.__getitem__)
+            index = min(range(column_count), key=heights.__getitem__)
             heights[index] += len(entries) + 2
             section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
             heading = Gtk.Label(label=category, xalign=0)
@@ -140,40 +182,58 @@ class ShortcutHelp(Gtk.Window):
                 row.get_style_context().add_class("shortcut-row")
                 key = Gtk.Label(label=combo, xalign=0, yalign=0.5)
                 key.set_line_wrap(True)
+                key.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
                 key.set_width_chars(19)
                 key.set_max_width_chars(23)
                 key.get_style_context().add_class("shortcut-key")
                 label = Gtk.Label(label=action, xalign=0, yalign=0.5)
                 label.set_line_wrap(True)
-                label.set_max_width_chars(28)
+                label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                label.set_max_width_chars(28 if column_count == 3 else 140)
                 row.pack_start(key, False, False, 0)
                 row.pack_start(label, True, True, 0)
                 section.pack_start(row, False, False, 0)
                 widgets.append((row, f"{category} {combo} {action}".casefold()))
             stacks[index].pack_start(section, False, False, 0)
-            self.sections.append((section, widgets))
-        self.empty = Gtk.Label(label="Keine passenden Shortcuts.")
-        self.empty.set_no_show_all(True)
-        panel.pack_start(self.empty, False, False, 0)
-        footer = Gtk.Label(label="Super = Windows-Taste · Halten = Wiederholung · 3 Finger horizontal = Workspace wechseln\nAlt-Tab: Alt halten, mit Tab wählen, Alt loslassen bestätigen · Enter bestätigen / Esc abbrechen", xalign=0)
-        footer.get_style_context().add_class("help-footer")
-        footer.set_line_wrap(True)
-        panel.pack_start(footer, False, False, 0)
+            page_sections.append((section, widgets))
+        empty = Gtk.Label(label=error or "Keine passenden Einträge.")
+        empty.set_line_wrap(True)
+        empty.set_no_show_all(True)
+        page.pack_start(empty, False, False, 0)
+        self.pages.append((page_sections, empty, error, tab, title))
 
     def filter_rows(self, entry):
         words = entry.get_text().casefold().replace("+", " ").split()
-        any_match = False
-        for section, widgets in self.sections:
-            section_match = False
-            for row, text in widgets:
-                visible = all(word in text for word in words)
-                row.set_visible(visible)
-                section_match |= visible
-            section.set_visible(section_match)
-            any_match |= section_match
-        self.empty.set_visible(not any_match)
+        for sections, empty, error, tab, title in self.pages:
+            matches = 0
+            for section, widgets in sections:
+                section_match = False
+                for row, text in widgets:
+                    visible = all(word in text for word in words)
+                    row.set_visible(visible)
+                    matches += visible
+                    section_match |= visible
+                section.set_visible(section_match)
+            empty.set_visible(bool(error) or not matches)
+            tab.set_text(f"{title} ({matches})")
 
     def on_key_press(self, _window, event):
+        modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
+        if modifiers == Gdk.ModifierType.CONTROL_MASK:
+            if event.keyval in (Gdk.KEY_1, Gdk.KEY_2):
+                position = self.search.get_position()
+                selection = self.search.get_selection_bounds()
+                self.notebook.set_current_page(event.keyval - Gdk.KEY_1)
+                self.search.grab_focus()
+                if selection:
+                    self.search.select_region(*selection)
+                else:
+                    self.search.set_position(position)
+                return True
+            if event.keyval in (Gdk.KEY_f, Gdk.KEY_F):
+                self.search.grab_focus()
+                self.search.select_region(0, -1)
+                return True
         if event.keyval == Gdk.KEY_Escape:
             self.destroy()
             return True
@@ -188,6 +248,11 @@ def main():
         except BlockingIOError:
             return
         bindings = json.loads(subprocess.check_output(["hyprctl", "-j", "binds"], text=True))
+        aliases, alias_error = [], ""
+        try:
+            aliases = alias_rows()
+        except (OSError, subprocess.SubprocessError, ValueError, IndexError, KeyError) as error:
+            alias_error = f"Zsh-Aliase konnten nicht geladen werden: {error}"
         monitors = json.loads(subprocess.check_output(["hyprctl", "-j", "monitors"], text=True))
         focused = next(monitor for monitor in monitors if monitor["focused"])
         display = Gdk.Display.get_default()
@@ -197,8 +262,9 @@ def main():
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
-        window = ShortcutHelp(monitor, shortcut_rows(bindings))
+        window = ShortcutHelp(monitor, shortcut_rows(bindings), aliases, alias_error)
         window.show_all()
+        window.filter_rows(window.search)
         window.search.grab_focus()
         Gtk.main()
 
