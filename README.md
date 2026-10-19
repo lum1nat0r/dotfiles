@@ -712,6 +712,20 @@ VS Code formatter settings require `esbenp.prettier-vscode`.
 The styles reference JetBrainsMono Nerd Font, Symbols Nerd Font and
 Lekton Nerd Font Mono.
 
+The E14's AMD digital microphone also requires `alsa-utils`, not just
+`alsa-lib` and `alsa-ucm-conf`. Its packaged udev rules run the UCM boot sequence,
+which creates `Mic ACP LED Capture Switch` and attaches the microphone LED to it
+instead of the unused analog `Capture Switch`. Without initialization, the LED
+can stay lit while PipeWire's digital microphone is unmuted.
+Install with `sudo pacman -S --needed alsa-utils`. For an already running session,
+run `sudo alsactl init 1` (verify the analog HDA card number in `/proc/asound/cards`
+first), then `systemctl --user restart wireplumber`. Initialization can reset
+mixer levels and mute states; restore the intended values afterward.
+The package supplies the boot/hotplug rules and `alsa-restore.service`; no custom
+LED daemon or Hyprland keybinding change is needed. Keep saved mixer state in
+`/var/lib/alsa/`, outside Stow. Live checks confirmed LED brightness `1` when
+muted and `0` when unmuted over two cycles, including a successful state restore.
+
 The island units use `Type=dbus`: music-island is ready only after it owns
 `io.Astal.music-island`, and right-islands has `Requires`/`After` dependencies on it.
 Both start after Waybar. AGS 3.1 writes every `ags run` bundle to the same
